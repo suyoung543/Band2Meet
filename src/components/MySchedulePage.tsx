@@ -3,12 +3,13 @@
 import { useRef, useState } from "react";
 import ScheduleGrid, { Legend } from "./ScheduleGrid";
 import MiniCalendar from "./MiniCalendar";
-import { DAYS, Status, Week, dayIndex, encodeSlots } from "@/lib/schedule";
+import { DAYS, Status, Week, dayIndex, encodeSlots, slotLabel } from "@/lib/schedule";
 import { deleteException, saveBase, saveException } from "@/app/actions";
 
-type Props = { initialBase: Week; initialExceptions: Record<string, Status[]> };
+export type Rehearsal = { date: string; start: number; end: number; team: string };
+type Props = { initialBase: Week; initialExceptions: Record<string, Status[]>; rehearsals: Rehearsal[] };
 
-export default function MySchedulePage({ initialBase, initialExceptions }: Props) {
+export default function MySchedulePage({ initialBase, initialExceptions, rehearsals }: Props) {
   const [tab, setTab] = useState<"base" | "exception">("base");
   const [base, setBase] = useState(initialBase);
   const [exceptions, setExceptions] = useState(initialExceptions);
@@ -35,6 +36,10 @@ export default function MySchedulePage({ initialBase, initialExceptions }: Props
 
   const dateBase = date ? base[dayIndex(new Date(date + "T00:00"))] : null;
   const dateValues = date ? exceptions[date] ?? dateBase! : null;
+  // 확정된 합주 시간은 날짜별 수정 그리드에서 잠금 (어느 팀에서든 그 시간은 불가로 계산됨)
+  const dayRehearsals = rehearsals.filter((r) => r.date === date);
+  const locked: (string | null)[] = Array(48).fill(null);
+  for (const r of dayRehearsals) locked.fill(r.team, r.start, r.end);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4">
@@ -59,7 +64,7 @@ export default function MySchedulePage({ initialBase, initialExceptions }: Props
         ))}
       </div>
 
-      <Legend />
+      <Legend rehearsal={tab === "exception"} />
 
       {tab === "base" ? (
         <ScheduleGrid
@@ -72,7 +77,7 @@ export default function MySchedulePage({ initialBase, initialExceptions }: Props
         />
       ) : (
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-          <MiniCalendar selected={date} marked={new Set(Object.keys(exceptions))} onSelect={setDate} />
+          <MiniCalendar selected={date} marked={new Set(Object.keys(exceptions))} rehearsals={new Set(rehearsals.map((r) => r.date))} onSelect={setDate} />
           {date && dateValues ? (
             <div className="flex flex-1 flex-col gap-2">
               <div className="flex items-center justify-between text-sm">
@@ -95,9 +100,15 @@ export default function MySchedulePage({ initialBase, initialExceptions }: Props
                   기본 시간표로 되돌리기
                 </button>
               </div>
+              {dayRehearsals.map((r) => (
+                <p key={`${r.team}-${r.start}`} className="text-sm">
+                  <span className="font-medium text-accent">확정 합주</span> {r.team} {slotLabel(r.start)}–{slotLabel(r.end)}
+                </p>
+              ))}
               <ScheduleGrid
                 columns={[date.slice(5)]}
                 values={[dateValues]}
+                locked={[locked]}
                 onChange={([col]) => {
                   setExceptions((e) => ({ ...e, [date]: col }));
                   run(date, () => saveException(date, encodeSlots(col)));

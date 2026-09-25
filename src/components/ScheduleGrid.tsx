@@ -7,10 +7,11 @@ type Props = {
   columns: string[]; // 열 제목 (요일 또는 날짜)
   values: Status[][]; // values[col][slot]
   onChange: (values: Status[][]) => void;
+  locked?: (string | null)[][]; // locked[col][slot] = 확정 합주 팀 이름 → 파란색, 수정 불가
 };
 
 // 탭하면 가능→불가능→미정 순환. 누른 채로 드래그하면 첫 칸의 새 상태로 칠함.
-export default function ScheduleGrid({ columns, values, onChange }: Props) {
+export default function ScheduleGrid({ columns, values, onChange, locked }: Props) {
   const paint = useRef<Status | null>(null);
   const latest = useRef(values);
   useEffect(() => {
@@ -18,7 +19,7 @@ export default function ScheduleGrid({ columns, values, onChange }: Props) {
   });
 
   const set = (c: number, s: number, status: Status) => {
-    if (latest.current[c][s] === status) return;
+    if (locked?.[c]?.[s] || latest.current[c][s] === status) return;
     const next = latest.current.map((col) => col.slice());
     next[c][s] = status;
     latest.current = next;
@@ -89,9 +90,12 @@ export default function ScheduleGrid({ columns, values, onChange }: Props) {
                   key={c}
                   data-c={c}
                   data-s={s}
-                  title={`${t} ${STATUS_LABEL[values[c][s]]}`}
-                  className={`h-5 touch-none border border-background cursor-pointer hover:brightness-110 ${COLOR[values[c][s]]}`}
+                  title={locked?.[c]?.[s] ? `${t} 합주: ${locked[c][s]}` : `${t} ${STATUS_LABEL[values[c][s]]}`}
+                  className={`h-5 touch-none border border-background ${
+                    locked?.[c]?.[s] ? "bg-accent" : `cursor-pointer hover:brightness-110 ${COLOR[values[c][s]]}`
+                  }`}
                   onPointerDown={(e) => {
+                    if (locked?.[c]?.[s]) return;
                     e.currentTarget.releasePointerCapture(e.pointerId); // 터치에서도 move 이벤트가 다른 칸으로 가게
                     paint.current = NEXT[values[c][s]];
                     set(c, s, paint.current);
@@ -106,7 +110,7 @@ export default function ScheduleGrid({ columns, values, onChange }: Props) {
   );
 }
 
-export function Legend() {
+export function Legend({ rehearsal }: { rehearsal?: boolean }) {
   return (
     <div className="flex gap-3 text-xs text-zinc-600 dark:text-zinc-400">
       {(Object.keys(COLOR) as Status[]).map((s) => (
@@ -115,6 +119,12 @@ export function Legend() {
           {STATUS_LABEL[s]}
         </span>
       ))}
+      {rehearsal && (
+        <span className="flex items-center gap-1">
+          <span className="inline-block h-3 w-3 rounded-sm bg-accent" />
+          확정 합주
+        </span>
+      )}
     </div>
   );
 }

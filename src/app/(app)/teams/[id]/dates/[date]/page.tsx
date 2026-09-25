@@ -106,8 +106,11 @@ export default async function DatePage({ params, searchParams }: PageProps<"/tea
               {TIMES.map((t, s) => {
                 const yes = rows.filter((r) => r[s] === "y").length;
                 return (
-                  <tr key={t} className={isConfirmed(s) ? "outline outline-2 -outline-offset-2 outline-accent" : ""}>
-                    <td className="pr-1 text-right align-top text-zinc-400 tabular-nums">{s % 2 === 0 ? t : ""}</td>
+                  <tr key={t}>
+                    <td
+                      title={isConfirmed(s) ? "확정된 합주" : undefined}
+                      className={`pr-1 text-right align-top tabular-nums ${isConfirmed(s) ? "bg-accent font-medium text-accent-fg" : "text-zinc-400"}`}
+                    >{s % 2 === 0 ? t : ""}</td>
                     {rows.map((r, i) => (
                       <td
                         key={i}

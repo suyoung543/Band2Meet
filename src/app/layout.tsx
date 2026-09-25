@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Band2Meet",
   description: "밴드 합주 일정 수합",
+  appleWebApp: { capable: true, title: "Band2Meet" }, // iOS 홈 화면 앱: 주소창 없이 전체 화면
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

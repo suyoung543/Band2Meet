@@ -8,10 +8,11 @@ const WEEK = ["일", "월", "화", "수", "목", "금", "토"]; // 캘린더는 
 type Props = {
   selected: string | null; // YYYY-MM-DD
   marked: Set<string>; // 예외가 있는 날짜
+  rehearsals?: Set<string>; // 확정 합주가 있는 날짜
   onSelect: (key: string) => void;
 };
 
-export default function MiniCalendar({ selected, marked, onSelect }: Props) {
+export default function MiniCalendar({ selected, marked, rehearsals, onSelect }: Props) {
   const [month, setMonth] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -50,9 +51,10 @@ export default function MiniCalendar({ selected, marked, onSelect }: Props) {
               } ${key === today ? "font-bold" : ""}`}
             >
               {d.getDate()}
-              {marked.has(key) && (
-                <span className="absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-orange-500" />
-              )}
+              <span className="absolute bottom-1 left-1/2 flex -translate-x-1/2 gap-0.5">
+                {marked.has(key) && <span className="h-1 w-1 rounded-full bg-orange-500" />}
+                {rehearsals?.has(key) && <span className={`h-1 w-1 rounded-full ${key === selected ? "bg-accent-fg" : "bg-accent"}`} />}
+              </span>
             </button>
           );
         })}
