@@ -1,0 +1,54 @@
+import { notFound } from "next/navigation";
+import { saveTeamSettings } from "@/app/actions";
+import { loadTeam } from "@/lib/team";
+
+const ERRORS: Record<string, string> = {
+  range: "기간을 확인해 주세요. 끝 날짜가 시작 날짜보다 빠르거나 기간이 3개월을 넘어요.",
+  min: "최소 연속 시간을 골라 주세요.",
+};
+
+// DB timestamptz → datetime-local 입력값 (한국 시간)
+const toLocalInput = (iso: string | null) =>
+  iso ? new Date(new Date(iso).getTime() + 9 * 3600_000).toISOString().slice(0, 16) : "";
+
+const field = "rounded border bg-transparent px-3 py-2 text-sm";
+
+export default async function SettingsPage({ params, searchParams }: PageProps<"/teams/[id]/settings">) {
+  const { id } = await params;
+  const { error } = await searchParams;
+  const { team, isLeader } = await loadTeam(id);
+  if (!isLeader) notFound();
+
+  return (
+    <form action={saveTeamSettings.bind(null, team.id)} className="flex max-w-md flex-col gap-4">
+      {typeof error === "string" && <p className="text-sm text-rose-600">{ERRORS[error]}</p>}
+
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="font-medium">수합 기간</span>
+        <span className="text-xs text-zinc-500">이 기간 안에서 합주 가능한 시간을 찾아요 (최대 3개월)</span>
+        <div className="flex items-center gap-2">
+          <input type="date" name="collect_start" required defaultValue={team.collect_start ?? ""} className={field} />
+          ~
+          <input type="date" name="collect_end" required defaultValue={team.collect_end ?? ""} className={field} />
+        </div>
+      </label>
+
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="font-medium">입력 마감 (선택)</span>
+        <input type="datetime-local" name="deadline" defaultValue={toLocalInput(team.deadline)} className={field} />
+      </label>
+
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="font-medium">최소 연속 시간</span>
+        <span className="text-xs text-zinc-500">이보다 짧게 겹치는 시간은 후보에서 빼요</span>
+        <select name="min_block_slots" defaultValue={team.min_block_slots} className={field}>
+          {[2, 3, 4, 5, 6, 7, 8].map((n) => (
+            <option key={n} value={n}>{n / 2}시간</option>
+          ))}
+        </select>
+      </label>
+
+      <button className="self-start rounded bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:brightness-110">저장</button>
+    </form>
+  );
+}

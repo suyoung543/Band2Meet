@@ -1,13 +1,21 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light dark; /* 날짜 선택 아이콘, select, 스크롤바 등 기본 UI도 다크 모드 따라가게 */
   --background: #ffffff;
   --foreground: #171717;
+  --line: #e4e4e7; /* 테두리/구분선 */
+  --accent: #557488; /* #7C9CB1은 흰 배경에서 대비가 약해 라이트 모드만 한 톤 진하게 */
+  --accent-fg: #ffffff; /* accent 배경 위 글자 */
+  --yes: #95d5b2; /* 가능 */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-yes: var(--yes);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -16,6 +24,10 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --line: #3f3f46;
+    --accent: #7c9cb1;
+    --accent-fg: #0a0a0a;
+    --yes: #74c69d;
   }
 }
 
@@ -23,4 +35,11 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Tailwind v4는 border 기본색이 글자색(currentColor)이라 선이 너무 진함 → 전역으로 연하게 */
+@layer base {
+  *, ::before, ::after, ::backdrop {
+    border-color: var(--line);
+  }
 }
