@@ -28,7 +28,7 @@ export default function MiniCalendar({ selected, marked, onSelect }: Props) {
   const shift = (n: number) => setMonth(new Date(first.getFullYear(), first.getMonth() + n, 1));
 
   return (
-    <div className="w-full max-w-xs">
+    <div className="mx-auto w-full max-w-xs sm:mx-0">
       <div className="mb-2 flex items-center justify-between">
         <button onClick={() => shift(-1)} className="rounded px-2 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700" aria-label="이전 달">‹</button>
         <span className="font-medium">{first.getFullYear()}년 {first.getMonth() + 1}월</span>

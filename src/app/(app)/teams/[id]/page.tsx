@@ -77,7 +77,7 @@ export default async function DashboardPage({ params, searchParams }: PageProps<
       </Section>
 
       <Section title="함께 가능한 날">
-        <div className="flex flex-wrap gap-6">
+        <div className="flex flex-wrap justify-center gap-8">
           {months(dates).map((month) => (
             <Heatmap key={month} month={month} dates={new Set(dates)} best={best} total={total} teamId={id} />
           ))}
@@ -148,7 +148,7 @@ function Heatmap(props: { month: string; dates: Set<string>; best: Map<string, n
   ];
 
   return (
-    <div className="w-full max-w-xs">
+    <div className="w-full max-w-sm">
       <div className="mb-1 text-sm font-medium">{y}년 {m}월</div>
       <div className="grid grid-cols-7 gap-1 text-center text-xs">
         {WEEK.map((d, i) => (
