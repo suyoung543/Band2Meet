@@ -30,17 +30,44 @@ export default function ScheduleGrid({ columns, values, onChange }: Props) {
     const c = el?.dataset.c, s = el?.dataset.s;
     return c && s ? [Number(c), Number(s)] : null;
   };
+  const paintAt = (x: number, y: number) => {
+    if (!paint.current) return;
+    const hit = cellAt(x, y);
+    if (hit) set(hit[0], hit[1], paint.current);
+  };
+
+  // iOS 사파리는 touch-action: none을 무시하고 스크롤을 시작해버려서 pointer 이벤트가 취소됨.
+  // 칠하는 중엔 touchmove를 직접 막고(passive: false) 거기서 칠함
+  const box = useRef<HTMLDivElement>(null);
+  const paintAtRef = useRef(paintAt);
+  useEffect(() => {
+    paintAtRef.current = paintAt;
+  });
+  useEffect(() => {
+    const el = box.current!;
+    const move = (e: TouchEvent) => {
+      if (!paint.current) return;
+      e.preventDefault();
+      paintAtRef.current(e.touches[0].clientX, e.touches[0].clientY);
+    };
+    const end = () => (paint.current = null);
+    el.addEventListener("touchmove", move, { passive: false });
+    el.addEventListener("touchend", end);
+    el.addEventListener("touchcancel", end);
+    return () => {
+      el.removeEventListener("touchmove", move);
+      el.removeEventListener("touchend", end);
+      el.removeEventListener("touchcancel", end);
+    };
+  }, []);
 
   return (
     <div
+      ref={box}
       className="select-none overflow-auto max-h-[70vh] rounded border border-zinc-200 dark:border-zinc-700"
       onPointerUp={() => (paint.current = null)}
-      onPointerLeave={() => (paint.current = null)}
-      onPointerMove={(e) => {
-        if (!paint.current) return;
-        const hit = cellAt(e.clientX, e.clientY);
-        if (hit) set(hit[0], hit[1], paint.current);
-      }}
+      onPointerLeave={(e) => e.pointerType === "mouse" && (paint.current = null)}
+      onPointerMove={(e) => paintAt(e.clientX, e.clientY)}
     >
       <table className="w-full border-collapse text-xs">
         <thead className="sticky top-0 z-10 bg-background">
