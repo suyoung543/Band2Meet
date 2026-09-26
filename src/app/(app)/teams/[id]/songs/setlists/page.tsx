@@ -1,3 +1,4 @@
+import Collapsible from "@/components/Collapsible";
 import ConfirmButton from "@/components/ConfirmButton";
 import { addToSetlist, createSetlist, deleteSetlist, updateSetlist } from "@/app/song-actions";
 import { db } from "@/lib/db";
@@ -52,7 +53,7 @@ export default async function SetlistsPage({ params }: PageProps<"/teams/[id]/so
             <div className="flex flex-wrap items-baseline gap-x-2">
               <h2 className="font-semibold">{sl.name}</h2>
               <span className="text-sm text-zinc-500">{sl.performance_date ? `공연 ${dateLabel(sl.performance_date)}` : "공연 날짜 미정"}</span>
-              <details className="relative ml-auto">
+              <Collapsible className="relative ml-auto">
                 <summary className={`${small} cursor-pointer list-none`}>셋리스트 수정 · 삭제</summary>
                 <div className="absolute right-0 z-20 mt-2 flex w-72 flex-col gap-3 rounded border bg-background p-3 text-sm shadow-lg">
                   <form action={updateSetlist.bind(null, sl.id)} className="flex flex-col gap-2">
@@ -72,7 +73,7 @@ export default async function SetlistsPage({ params }: PageProps<"/teams/[id]/so
                     </ConfirmButton>
                   </form>
                 </div>
-              </details>
+              </Collapsible>
             </div>
             <SetlistEditor setlistId={sl.id} items={items} />
             {addable.length ? (

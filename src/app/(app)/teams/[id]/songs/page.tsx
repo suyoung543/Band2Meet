@@ -1,3 +1,4 @@
+import Collapsible from "@/components/Collapsible";
 import ConfirmButton from "@/components/ConfirmButton";
 import { addSong, deleteSong, setSongStatus, toggleVote } from "@/app/song-actions";
 import { db } from "@/lib/db";
@@ -78,7 +79,7 @@ export default async function CandidatesPage({ params, searchParams }: PageProps
 
   return (
     <div className="flex flex-col gap-4">
-      <details className="rounded border px-4 py-3" open={typeof error === "string"}>
+      <Collapsible className="rounded border px-4 py-3" open={typeof error === "string"}>
         <summary className="cursor-pointer text-sm font-medium">+ 곡 추천하기</summary>
         <form action={addSong.bind(null, id)} className="mt-3 flex flex-col gap-2">
           {typeof error === "string" && <p className="text-sm text-rose-600">{ERRORS[error]}</p>}
@@ -92,7 +93,7 @@ export default async function CandidatesPage({ params, searchParams }: PageProps
           </div>
           <button className="self-start rounded bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:brightness-110">추천</button>
         </form>
-      </details>
+      </Collapsible>
 
       {candidates.length ? (
         <ul className="flex flex-col divide-y rounded border">{candidates.map(row)}</ul>
