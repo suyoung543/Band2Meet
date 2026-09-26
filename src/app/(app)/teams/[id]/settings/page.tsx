@@ -1,4 +1,5 @@
-import { saveTeamSettings } from "@/app/actions";
+import { resetCollection, saveTeamSettings } from "@/app/actions";
+import ConfirmButton from "@/components/ConfirmButton";
 import { loadTeam } from "@/lib/team";
 
 const ERRORS: Record<string, string> = {
@@ -18,7 +19,8 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
   const { team } = await loadTeam(id);
 
   return (
-    <form action={saveTeamSettings.bind(null, team.id)} className="flex max-w-md flex-col gap-4">
+    <div className="flex max-w-md flex-col gap-6">
+    <form action={saveTeamSettings.bind(null, team.id)} className="flex flex-col gap-4">
       {typeof error === "string" && <p className="text-sm text-rose-600">{ERRORS[error]}</p>}
 
       <label className="flex flex-col gap-1 text-sm">
@@ -48,5 +50,18 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
 
       <button className="self-start rounded bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:brightness-110">저장</button>
     </form>
+
+      {team.collect_start && (
+        <form action={resetCollection.bind(null, team.id)} className="flex flex-col gap-1 border-t pt-6">
+          <ConfirmButton
+            className="self-start text-sm text-rose-600 hover:underline"
+            message={"현재 수합을 초기화할까요?\n수합 기간과 입력 마감이 지워지고 대시보드가 비워져요.\n멤버들의 시간표와 확정된 합주는 그대로 남아요."}
+          >
+            수합 초기화
+          </ConfirmButton>
+          <span className="text-xs text-zinc-500">합주를 다 잡았으면 초기화해서 대시보드를 비워두세요. 다음 수합 때 기간만 다시 정하면 돼요.</span>
+        </form>
+      )}
+    </div>
   );
 }

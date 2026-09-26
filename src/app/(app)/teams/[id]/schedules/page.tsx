@@ -13,7 +13,7 @@ export default async function SchedulesPage({ params }: PageProps<"/teams/[id]/s
   await loadTeam(id); // 멤버 확인
   const { data } = await db
     .from("confirmed_schedules")
-    .select("id, date, start_slot, end_slot")
+    .select("id, date, start_slot, end_slot, place")
     .eq("team_id", id)
     .order("date")
     .order("start_slot");
@@ -27,10 +27,13 @@ export default async function SchedulesPage({ params }: PageProps<"/teams/[id]/s
     <ul className="flex flex-col divide-y rounded border">
       {rows.map((c) => (
         <li key={c.id} className="flex items-center gap-3 px-4 py-2 text-sm">
-          <Link href={`/teams/${id}/schedules/${c.id}`} className="flex gap-3 hover:underline">
-            <span className="font-medium">{dateLabel(c.date)}</span>
-            <span>{slotLabel(c.start_slot)}–{slotLabel(c.end_slot)}</span>
-            <span className="text-zinc-500">{(c.end_slot - c.start_slot) / 2}시간</span>
+          <Link href={`/teams/${id}/schedules/${c.id}`} className="flex flex-col hover:underline">
+            <span className="flex gap-3">
+              <span className="font-medium">{dateLabel(c.date)}</span>
+              <span>{slotLabel(c.start_slot)}–{slotLabel(c.end_slot)}</span>
+              <span className="text-zinc-500">{(c.end_slot - c.start_slot) / 2}시간</span>
+            </span>
+            {c.place && <span className="text-xs text-zinc-500">{c.place}</span>}
           </Link>
           {canCancel && (
             <form action={cancelSchedule.bind(null, id, c.id)} className="ml-auto">

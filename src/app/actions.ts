@@ -91,6 +91,14 @@ export async function saveTeamSettings(teamId: string, formData: FormData) {
   redirect(`/teams/${teamId}`);
 }
 
+// 진행 중인 수합 끝내기: 기간·마감만 비움. 개인 시간표와 확정 합주는 그대로
+export async function resetCollection(teamId: string) {
+  await requireMember(teamId);
+  await db.from("teams").update({ collect_start: null, collect_end: null, deadline: null }).eq("id", teamId);
+  revalidatePath(`/teams/${teamId}`, "layout");
+  redirect(`/teams/${teamId}`);
+}
+
 export async function confirmSchedule(teamId: string, date: string, formData: FormData) {
   const { user_id } = await requireMember(teamId);
   const start = Number(formData.get("start")), end = Number(formData.get("end"));

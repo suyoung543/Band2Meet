@@ -22,7 +22,7 @@ export default async function DashboardPage({ params, searchParams }: PageProps<
   if (!team.collect_start || !team.collect_end) {
     return (
       <p className="text-sm text-zinc-500">
-        아직 수합 기간이 정해지지 않았어요.{" "}
+        진행 중인 수합이 없어요.{" "}
         <Link href={`/teams/${id}/settings`} className="text-accent underline">수합 설정하기</Link>
       </p>
     );
