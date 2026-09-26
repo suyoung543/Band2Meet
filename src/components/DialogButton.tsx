@@ -14,7 +14,7 @@ export default function DialogButton({ label, title, className, children }: { la
         ref={ref}
         onSubmit={() => ref.current?.close()}
         onClick={(e) => e.target === ref.current && ref.current?.close()} // 바깥(배경) 누르면 닫힘
-        className="m-auto w-[min(22rem,calc(100%-2rem))] rounded-lg border bg-background p-5 text-foreground backdrop:bg-black/50"
+        className="m-auto w-[min(22rem,calc(100%-2rem))] whitespace-normal rounded-lg border bg-background p-5 text-left text-foreground backdrop:bg-black/50"
       >
         <div className="flex flex-col gap-4">
           <h3 className="font-semibold">{title}</h3>
