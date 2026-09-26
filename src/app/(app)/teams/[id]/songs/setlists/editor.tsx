@@ -78,7 +78,7 @@ export default function SetlistEditor({ setlistId, items: initial, isLeader }: {
                 <button className={small} onClick={() => move(i, i - 1)} disabled={i === 0} aria-label="위로">▲</button>
                 <button className={small} onClick={() => move(i, i + 1)} disabled={i === items.length - 1} aria-label="아래로">▼</button>
                 <button className={small} onClick={() => setEditing(editing === it.song_id ? null : it.song_id)}>메모</button>
-                <button className={small} onClick={() => removeFromSetlist(setlistId, it.song_id)} aria-label="빼기">✕</button>
+                <button className={small} onClick={() => confirm(`"${it.title}"을(를) 셋리스트에서 뺄까요?`) && removeFromSetlist(setlistId, it.song_id)} aria-label="빼기">✕</button>
               </div>
             )}
           </li>

@@ -69,19 +69,3 @@ export async function loadAvailability(teamId: string, userIds: string[], from: 
   }
   return userIds.map((id) => byId.get(id)!);
 }
-
-// 확정 합주 id → 그 합주까지 연습해올 곡 제목들 (연습 중인 곡만)
-export async function loadPracticeSongs(scheduleIds: string[]) {
-  const out = new Map<string, string[]>();
-  if (!scheduleIds.length) return out;
-  const { data } = await db
-    .from("practice_assignments")
-    .select("schedule_id, songs!inner(title, status)")
-    .in("schedule_id", scheduleIds)
-    .eq("songs.status", "practicing");
-  for (const r of data ?? []) {
-    const title = (r.songs as unknown as { title: string }).title;
-    out.set(r.schedule_id!, [...(out.get(r.schedule_id!) ?? []), title]);
-  }
-  return out;
-}

@@ -1,3 +1,4 @@
+import ConfirmButton from "@/components/ConfirmButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cancelScheduleAndBack, updateSchedule } from "@/app/actions";
@@ -86,7 +87,7 @@ export default async function ScheduleDetailPage({ params, searchParams }: PageP
             </div>
           </form>
           <form action={cancelScheduleAndBack.bind(null, id, s.id)}>
-            <button className="text-sm text-rose-600 hover:underline">확정 취소</button>
+            <ConfirmButton className="text-sm text-rose-600 hover:underline" message="이 합주 확정을 취소할까요? 적어둔 합주실·할 일·메모도 함께 지워져요.">확정 취소</ConfirmButton>
           </form>
         </Section>
       ) : (

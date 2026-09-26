@@ -1,3 +1,4 @@
+import ConfirmButton from "@/components/ConfirmButton";
 import { approveMember, removeMember } from "@/app/actions";
 import { loadTeam } from "@/lib/team";
 
@@ -25,7 +26,7 @@ export default async function MembersPage({ params }: PageProps<"/teams/[id]/mem
                   <button className={small}>승인</button>
                 </form>
                 <form action={removeMember.bind(null, team.id, m.user_id)}>
-                  <button className={small}>거절</button>
+                  <ConfirmButton className={small} message={`${m.users.nickname}님의 참여 요청을 거절할까요?`}>거절</ConfirmButton>
                 </form>
               </li>
             ))}
@@ -42,7 +43,7 @@ export default async function MembersPage({ params }: PageProps<"/teams/[id]/mem
               {m.user_id === team.leader_id && <span className="text-xs text-accent">리더</span>}
               {isLeader && m.user_id !== userId && (
                 <form action={removeMember.bind(null, team.id, m.user_id)} className="ml-auto">
-                  <button className={small}>내보내기</button>
+                  <ConfirmButton className={small} message={`${m.users.nickname}님을 팀에서 내보낼까요?\n다시 들어오려면 초대코드로 참여 요청을 해야 해요.`}>내보내기</ConfirmButton>
                 </form>
               )}
             </li>

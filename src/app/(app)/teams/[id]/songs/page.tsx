@@ -1,3 +1,4 @@
+import ConfirmButton from "@/components/ConfirmButton";
 import { addSong, deleteSong, setSongStatus, toggleVote } from "@/app/song-actions";
 import { db } from "@/lib/db";
 import { durationLabel } from "@/lib/schedule";
@@ -68,7 +69,7 @@ export default async function CandidatesPage({ params, searchParams }: PageProps
             <form action={setSongStatus.bind(null, s.id, "candidate")}><button className={small}>후보로</button></form>
           )}
           {(isLeader || s.created_by === userId) && (
-            <form action={deleteSong.bind(null, s.id)}><button className={small} title="삭제">삭제</button></form>
+            <form action={deleteSong.bind(null, s.id)}><ConfirmButton className={small} message={`"${s.title}"을(를) 삭제할까요? 투표 기록도 함께 지워져요.`}>삭제</ConfirmButton></form>
           )}
         </div>
       </li>

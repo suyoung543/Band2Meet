@@ -1,10 +1,11 @@
+import ConfirmButton from "@/components/ConfirmButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cancelSchedule, confirmSchedule } from "@/app/actions";
 import { findBlocks, memberDay } from "@/lib/availability";
 import { db } from "@/lib/db";
 import { STATUS_COLOR, STATUS_LABEL, Status, TIMES, dateLabel, slotLabel } from "@/lib/schedule";
-import { loadAvailability, loadPracticeSongs, loadTeam } from "@/lib/team";
+import { loadAvailability, loadTeam } from "@/lib/team";
 
 const STATUS: Record<string, Status> = { y: "yes", n: "no", m: "maybe" };
 const small = "rounded border px-2 py-1 text-xs hover:bg-zinc-200 dark:hover:bg-zinc-700";
@@ -21,7 +22,6 @@ export default async function DatePage({ params, searchParams }: PageProps<"/tea
     db.from("confirmed_schedules").select("id, start_slot, end_slot").eq("team_id", id).eq("date", date).order("start_slot"),
   ]);
   const rows = members.map((m) => memberDay(m, date));
-  const songs = await loadPracticeSongs((confirmed ?? []).map((c) => c.id));
   const blocks = findBlocks(members, [date], { minSlots: team.min_block_slots, minPeople });
   const nick = new Map(active.map((m) => [m.user_id, m.users.nickname]));
   const isConfirmed = (s: number) => confirmed?.some((c) => s >= c.start_slot && s < c.end_slot);
@@ -40,10 +40,9 @@ export default async function DatePage({ params, searchParams }: PageProps<"/tea
             {confirmed.map((c) => (
               <li key={c.id} className="flex items-center gap-2">
                 <Link href={`/teams/${id}/schedules/${c.id}`} className="font-medium text-accent hover:underline">{slotLabel(c.start_slot)}–{slotLabel(c.end_slot)}</Link>
-                {songs.has(c.id) && <span className="text-xs text-zinc-500">🎵 연습곡: {songs.get(c.id)!.join(", ")}</span>}
                 {isLeader && (
                   <form action={cancelSchedule.bind(null, id, c.id)}>
-                    <button className={small}>확정 취소</button>
+                    <ConfirmButton className={small} message="이 합주 확정을 취소할까요?">확정 취소</ConfirmButton>
                   </form>
                 )}
               </li>

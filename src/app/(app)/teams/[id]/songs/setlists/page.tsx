@@ -1,3 +1,4 @@
+import ConfirmButton from "@/components/ConfirmButton";
 import { addToSetlist, createSetlist, deleteSetlist } from "@/app/song-actions";
 import { db } from "@/lib/db";
 import { loadTeam } from "@/lib/team";
@@ -21,8 +22,8 @@ export default async function SetlistsPage({ params }: PageProps<"/teams/[id]/so
       .select("id, name, setlist_items(song_id, position, memo, songs(title, artist, duration_sec))")
       .eq("team_id", id)
       .order("created_at", { ascending: false }),
-    // 셋리스트에 넣을 수 있는 곡: 연습 중 + 공연 준비 완료
-    db.from("songs").select("id, title, status").eq("team_id", id).in("status", ["setlist", "practicing"]).order("title"),
+    // 셋리스트에 넣을 수 있는 곡: 연습 중인 곡
+    db.from("songs").select("id, title").eq("team_id", id).eq("status", "practicing").order("title"),
   ]);
   const setlists = (data ?? []) as unknown as Setlist[];
 
@@ -48,7 +49,7 @@ export default async function SetlistsPage({ params }: PageProps<"/teams/[id]/so
               <h2 className="font-semibold">{sl.name}</h2>
               {isLeader && (
                 <form action={deleteSetlist.bind(null, sl.id)} className="ml-auto">
-                  <button className={small}>셋리스트 삭제</button>
+                  <ConfirmButton className={small} message={`"${sl.name}" 셋리스트를 삭제할까요? 곡은 그대로 남아요.`}>셋리스트 삭제</ConfirmButton>
                 </form>
               )}
             </div>
@@ -58,13 +59,13 @@ export default async function SetlistsPage({ params }: PageProps<"/teams/[id]/so
                 <form action={addToSetlist.bind(null, sl.id)} className="flex gap-2 text-sm">
                   <select name="song_id" className="flex-1 rounded border bg-transparent px-2 py-1">
                     {addable.map((s) => (
-                      <option key={s.id} value={s.id}>{s.title}{s.status === "practicing" ? " (연습 중)" : ""}</option>
+                      <option key={s.id} value={s.id}>{s.title}</option>
                     ))}
                   </select>
                   <button className={small}>곡 추가</button>
                 </form>
               ) : (
-                <p className="text-xs text-zinc-500">추가할 수 있는 곡이 없어요. 연습 중이거나 공연 준비가 끝난 곡만 넣을 수 있어요.</p>
+                <p className="text-xs text-zinc-500">추가할 수 있는 곡이 없어요. 연습 중인 곡만 넣을 수 있어요.</p>
               )
             )}
           </section>

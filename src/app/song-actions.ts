@@ -84,8 +84,8 @@ export async function toggleVote(songId: string) {
   refresh(teamId);
 }
 
-// candidate → practicing → setlist, hold는 보류. 연습곡이 되면 연습 배정을 하나 만듦
-export async function setSongStatus(songId: string, status: "candidate" | "practicing" | "setlist" | "hold") {
+// candidate → practicing, hold는 보류. 연습곡이 되면 연습 배정(멤버 코멘트용)을 하나 만듦
+export async function setSongStatus(songId: string, status: "candidate" | "practicing" | "hold") {
   const teamId = await teamOf("songs", songId);
   await requireLeader(teamId);
   await db.from("songs").update({ status }).eq("id", songId);
@@ -97,19 +97,6 @@ export async function setSongStatus(songId: string, status: "candidate" | "pract
 }
 
 // ── 연습 중 ─────────────────────────────────────
-
-export async function setAssignmentSchedule(assignmentId: string, formData: FormData) {
-  const teamId = await teamOfAssignment(assignmentId);
-  await requireLeader(teamId);
-  const scheduleId = String(formData.get("schedule_id") ?? "");
-  if (scheduleId) {
-    // 다른 팀 일정에 연결 못 하게
-    const { data } = await db.from("confirmed_schedules").select("id").eq("id", scheduleId).eq("team_id", teamId).maybeSingle();
-    if (!data) throw new Error("없는 일정");
-  }
-  await db.from("practice_assignments").update({ schedule_id: scheduleId || null }).eq("id", assignmentId);
-  refresh(teamId);
-}
 
 export async function saveNote(assignmentId: string, formData: FormData) {
   const teamId = await teamOfAssignment(assignmentId);

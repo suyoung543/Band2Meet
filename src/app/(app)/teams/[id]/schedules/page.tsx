@@ -1,8 +1,9 @@
+import ConfirmButton from "@/components/ConfirmButton";
 import Link from "next/link";
 import { cancelSchedule } from "@/app/actions";
 import { db } from "@/lib/db";
 import { dateLabel, kstToday, slotLabel } from "@/lib/schedule";
-import { loadPracticeSongs, loadTeam } from "@/lib/team";
+import { loadTeam } from "@/lib/team";
 import Section from "../section";
 
 const small = "rounded border px-2 py-1 text-xs hover:bg-zinc-200 dark:hover:bg-zinc-700";
@@ -21,7 +22,6 @@ export default async function SchedulesPage({ params }: PageProps<"/teams/[id]/s
   const today = kstToday();
   const upcoming = (data ?? []).filter((c) => c.date >= today);
   const past = (data ?? []).filter((c) => c.date < today).reverse();
-  const songs = await loadPracticeSongs(upcoming.map((c) => c.id));
 
   const list = (rows: typeof upcoming, canCancel: boolean) => (
     <ul className="flex flex-col divide-y rounded border">
@@ -32,10 +32,9 @@ export default async function SchedulesPage({ params }: PageProps<"/teams/[id]/s
             <span>{slotLabel(c.start_slot)}–{slotLabel(c.end_slot)}</span>
             <span className="text-zinc-500">{(c.end_slot - c.start_slot) / 2}시간</span>
           </Link>
-          {songs.has(c.id) && <span className="text-xs text-zinc-500">🎵 {songs.get(c.id)!.join(", ")}</span>}
           {canCancel && (
             <form action={cancelSchedule.bind(null, id, c.id)} className="ml-auto">
-              <button className={small}>확정 취소</button>
+              <ConfirmButton className={small} message="이 합주 확정을 취소할까요?">확정 취소</ConfirmButton>
             </form>
           )}
         </li>
