@@ -10,7 +10,7 @@ const small = "rounded border px-2 py-1 text-xs hover:bg-zinc-200 dark:hover:bg-
 
 export default async function SchedulesPage({ params }: PageProps<"/teams/[id]/schedules">) {
   const { id } = await params;
-  const { isLeader } = await loadTeam(id);
+  await loadTeam(id); // 멤버 확인
   const { data } = await db
     .from("confirmed_schedules")
     .select("id, date, start_slot, end_slot")
@@ -45,9 +45,9 @@ export default async function SchedulesPage({ params }: PageProps<"/teams/[id]/s
   return (
     <div className="flex flex-col divide-y">
       <Section title={`다가오는 합주 ${upcoming.length}`}>
-        {upcoming.length ? list(upcoming, isLeader) : (
+        {upcoming.length ? list(upcoming, true) : (
           <p className="text-sm text-zinc-500">
-            확정된 합주가 없어요. {isLeader ? "대시보드에서 날짜를 골라 확정하세요." : "리더가 확정하면 여기에 나와요."}
+            확정된 합주가 없어요. 대시보드에서 날짜를 골라 확정하세요.
           </p>
         )}
       </Section>

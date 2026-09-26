@@ -13,7 +13,7 @@ const small = "rounded border px-2 py-1 text-xs hover:bg-zinc-200 dark:hover:bg-
 export default async function DatePage({ params, searchParams }: PageProps<"/teams/[id]/dates/[date]">) {
   const { id, date } = await params;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(Date.parse(date))) notFound();
-  const { team, active, isLeader } = await loadTeam(id);
+  const { team, active } = await loadTeam(id);
   const total = active.length;
   const minPeople = Math.min(Math.max(Number((await searchParams).min) || total, 1), total);
 
@@ -40,11 +40,9 @@ export default async function DatePage({ params, searchParams }: PageProps<"/tea
             {confirmed.map((c) => (
               <li key={c.id} className="flex items-center gap-2">
                 <Link href={`/teams/${id}/schedules/${c.id}`} className="font-medium text-accent hover:underline">{slotLabel(c.start_slot)}–{slotLabel(c.end_slot)}</Link>
-                {isLeader && (
-                  <form action={cancelSchedule.bind(null, id, c.id)}>
-                    <ConfirmButton className={small} message="이 합주 확정을 취소할까요?">확정 취소</ConfirmButton>
-                  </form>
-                )}
+                <form action={cancelSchedule.bind(null, id, c.id)}>
+                  <ConfirmButton className={small} message="이 합주 확정을 취소할까요?">확정 취소</ConfirmButton>
+                </form>
               </li>
             ))}
           </ul>
@@ -59,13 +57,11 @@ export default async function DatePage({ params, searchParams }: PageProps<"/tea
               <li key={`${b.start}-${b.members.join()}`} className="flex flex-wrap items-center gap-x-3 px-4 py-2 text-sm">
                 <span className="font-medium">{slotLabel(b.start)}–{slotLabel(b.end)}</span>
                 <span className="text-zinc-500">{(b.end - b.start) / 2}시간 · {b.members.map((u) => nick.get(u)).join(", ")}</span>
-                {isLeader && (
-                  <form action={confirmSchedule.bind(null, id, date)} className="ml-auto">
-                    <input type="hidden" name="start" value={b.start} />
-                    <input type="hidden" name="end" value={b.end} />
-                    <button className={small}>이 시간으로 확정</button>
-                  </form>
-                )}
+                <form action={confirmSchedule.bind(null, id, date)} className="ml-auto">
+                  <input type="hidden" name="start" value={b.start} />
+                  <input type="hidden" name="end" value={b.end} />
+                  <button className={small}>이 시간으로 확정</button>
+                </form>
               </li>
             ))}
           </ul>
@@ -74,19 +70,17 @@ export default async function DatePage({ params, searchParams }: PageProps<"/tea
         )}
       </section>
 
-      {isLeader && (
-        <form action={confirmSchedule.bind(null, id, date)} className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="font-medium">직접 확정</span>
-          <select name="start" defaultValue={blocks[0]?.start ?? 36} className="rounded border bg-transparent px-2 py-1">
-            {TIMES.map((t, i) => <option key={i} value={i}>{t}</option>)}
-          </select>
-          ~
-          <select name="end" defaultValue={blocks[0]?.end ?? 42} className="rounded border bg-transparent px-2 py-1">
-            {TIMES.map((_, i) => <option key={i} value={i + 1}>{slotLabel(i + 1)}</option>)}
-          </select>
-          <button className="rounded bg-accent px-3 py-1 font-medium text-accent-fg hover:brightness-110">확정</button>
-        </form>
-      )}
+      <form action={confirmSchedule.bind(null, id, date)} className="flex flex-wrap items-center gap-2 text-sm">
+        <span className="font-medium">직접 확정</span>
+        <select name="start" defaultValue={blocks[0]?.start ?? 36} className="rounded border bg-transparent px-2 py-1">
+          {TIMES.map((t, i) => <option key={i} value={i}>{t}</option>)}
+        </select>
+        ~
+        <select name="end" defaultValue={blocks[0]?.end ?? 42} className="rounded border bg-transparent px-2 py-1">
+          {TIMES.map((_, i) => <option key={i} value={i + 1}>{slotLabel(i + 1)}</option>)}
+        </select>
+        <button className="rounded bg-accent px-3 py-1 font-medium text-accent-fg hover:brightness-110">확정</button>
+      </form>
 
       <section className="flex flex-col gap-2">
         <h3 className="text-sm font-medium">시간대별 상세</h3>

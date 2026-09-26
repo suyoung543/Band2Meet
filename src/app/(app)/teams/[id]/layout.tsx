@@ -3,7 +3,7 @@ import Tabs from "@/components/Tabs";
 
 export default async function TeamLayout({ children, params }: LayoutProps<"/teams/[id]">) {
   const { id } = await params;
-  const { team, me, isLeader } = await loadTeam(id);
+  const { team, me } = await loadTeam(id);
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4">
@@ -18,7 +18,7 @@ export default async function TeamLayout({ children, params }: LayoutProps<"/tea
               { href: `/teams/${id}/schedules`, label: "확정 일정", also: [`/teams/${id}/schedules/`] },
               { href: `/teams/${id}/songs`, label: "곡", also: [`/teams/${id}/songs`] },
               { href: `/teams/${id}/members`, label: "멤버" },
-              ...(isLeader ? [{ href: `/teams/${id}/settings`, label: "수합 설정" }] : []),
+              { href: `/teams/${id}/settings`, label: "수합 설정" },
             ]}
           />
           {children}

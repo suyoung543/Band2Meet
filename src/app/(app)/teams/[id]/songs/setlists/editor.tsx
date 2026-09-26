@@ -8,8 +8,8 @@ export type Item = { song_id: string; title: string; artist: string | null; dura
 
 const small = "rounded border px-1.5 py-0.5 text-xs hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-30";
 
-// 리더: 드래그(데스크톱) 또는 ▲▼(모바일)로 순서 변경, 곡별 메모 수정
-export default function SetlistEditor({ setlistId, items: initial, isLeader }: { setlistId: string; items: Item[]; isLeader: boolean }) {
+// 드래그(데스크톱) 또는 ▲▼(모바일)로 순서 변경, 곡별 메모 수정
+export default function SetlistEditor({ setlistId, items: initial }: { setlistId: string; items: Item[] }) {
   const [items, setItems] = useState(initial);
   const [dragging, setDragging] = useState<number | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
@@ -41,7 +41,7 @@ export default function SetlistEditor({ setlistId, items: initial, isLeader }: {
         {items.map((it, i) => (
           <li
             key={it.song_id}
-            draggable={isLeader}
+            draggable
             onDragStart={() => setDragging(i)}
             onDragOver={(e) => e.preventDefault()}
             onDrop={() => {
@@ -49,13 +49,13 @@ export default function SetlistEditor({ setlistId, items: initial, isLeader }: {
               setDragging(null);
             }}
             onDragEnd={() => setDragging(null)}
-            className={`flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm ${isLeader ? "cursor-grab" : ""} ${dragging === i ? "opacity-40" : ""}`}
+            className={`flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-sm cursor-grab ${dragging === i ? "opacity-40" : ""}`}
           >
             <span className="w-5 text-right text-zinc-400 tabular-nums">{i + 1}</span>
             <div className="flex min-w-0 flex-1 flex-col">
               <span className="font-medium">
                 {it.title}
-                {it.artist && <span className="ml-2 text-xs font-normal text-zinc-500">{it.artist}</span>}
+                {it.artist && ` - ${it.artist}`}
               </span>
               {editing === it.song_id ? (
                 <form
@@ -73,14 +73,12 @@ export default function SetlistEditor({ setlistId, items: initial, isLeader }: {
               )}
             </div>
             <span className="text-xs text-zinc-500 tabular-nums">{it.duration_sec ? durationLabel(it.duration_sec) : "–"}</span>
-            {isLeader && (
-              <div className="flex gap-1">
-                <button className={small} onClick={() => move(i, i - 1)} disabled={i === 0} aria-label="위로">▲</button>
-                <button className={small} onClick={() => move(i, i + 1)} disabled={i === items.length - 1} aria-label="아래로">▼</button>
-                <button className={small} onClick={() => setEditing(editing === it.song_id ? null : it.song_id)}>메모</button>
-                <button className={small} onClick={() => confirm(`"${it.title}"을(를) 셋리스트에서 뺄까요?`) && removeFromSetlist(setlistId, it.song_id)} aria-label="빼기">✕</button>
-              </div>
-            )}
+            <div className="flex gap-1">
+              <button className={small} onClick={() => move(i, i - 1)} disabled={i === 0} aria-label="위로">▲</button>
+              <button className={small} onClick={() => move(i, i + 1)} disabled={i === items.length - 1} aria-label="아래로">▼</button>
+              <button className={small} onClick={() => setEditing(editing === it.song_id ? null : it.song_id)}>메모</button>
+              <button className={small} onClick={() => confirm(`"${it.title}"을(를) 셋리스트에서 뺄까요?`) && removeFromSetlist(setlistId, it.song_id)} aria-label="빼기">✕</button>
+            </div>
           </li>
         ))}
       </ol>

@@ -35,8 +35,6 @@ export default async function CandidatesPage({ params, searchParams }: PageProps
   const candidates = songs.filter((s) => s.status === "candidate").sort((a, b) => b.votes.length - a.votes.length);
   const held = songs.filter((s) => s.status === "hold");
 
-  // 편중 방지: 멤버별로 올린 후보 곡 수
-  const uploads = active.map((m) => ({ name: m.users.nickname, n: candidates.filter((s) => s.created_by === m.user_id).length }));
 
   const row = (s: Song) => {
     const voted = s.votes.some((v) => v.user_id === userId);
@@ -59,13 +57,13 @@ export default async function CandidatesPage({ params, searchParams }: PageProps
           </span>
         </div>
         <div className="flex gap-1">
-          {isLeader && s.status === "candidate" && (
+          {s.status === "candidate" && (
             <>
               <form action={setSongStatus.bind(null, s.id, "practicing")}><button className={small}>연습곡으로</button></form>
               <form action={setSongStatus.bind(null, s.id, "hold")}><button className={small}>보류</button></form>
             </>
           )}
-          {isLeader && s.status === "hold" && (
+          {s.status === "hold" && (
             <form action={setSongStatus.bind(null, s.id, "candidate")}><button className={small}>후보로</button></form>
           )}
           {(isLeader || s.created_by === userId) && (
@@ -93,10 +91,6 @@ export default async function CandidatesPage({ params, searchParams }: PageProps
           <button className="self-start rounded bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:brightness-110">추천</button>
         </form>
       </details>
-
-      <p className="text-xs text-zinc-500">
-        올린 곡: {uploads.map((u) => `${u.name} ${u.n}`).join(" · ")}
-      </p>
 
       {candidates.length ? (
         <ul className="flex flex-col divide-y rounded border">{candidates.map(row)}</ul>

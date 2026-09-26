@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { requireLeader, requireMember } from "@/lib/auth";
 import { requireUser } from "@/lib/session";
 
 const SLOTS = /^[ynm]{48}$/;
@@ -51,13 +52,6 @@ export async function joinTeam(formData: FormData) {
   redirect(`/teams/${team.id}`);
 }
 
-async function requireLeader(teamId: string) {
-  const user_id = await requireUser();
-  const { data } = await db.from("teams").select("id").eq("id", teamId).eq("leader_id", user_id).maybeSingle();
-  if (!data) throw new Error("리더만 할 수 있어요");
-  return user_id;
-}
-
 export async function approveMember(teamId: string, userId: string) {
   await requireLeader(teamId);
   await db.from("team_members").update({ status: "active" }).eq("team_id", teamId).eq("user_id", userId);
@@ -65,7 +59,7 @@ export async function approveMember(teamId: string, userId: string) {
 }
 
 export async function removeMember(teamId: string, userId: string) {
-  const leader = await requireLeader(teamId);
+  const { user_id: leader } = await requireLeader(teamId);
   if (userId === leader) throw new Error("리더는 내보낼 수 없어요");
   await db.from("team_members").delete().eq("team_id", teamId).eq("user_id", userId);
   revalidatePath(`/teams/${teamId}`, "layout");
@@ -76,7 +70,7 @@ export async function removeMember(teamId: string, userId: string) {
 const MAX_RANGE_DAYS = 92;
 
 export async function saveTeamSettings(teamId: string, formData: FormData) {
-  await requireLeader(teamId);
+  await requireMember(teamId);
   const start = String(formData.get("collect_start") ?? "");
   const end = String(formData.get("collect_end") ?? "");
   const deadline = String(formData.get("deadline") ?? ""); // datetime-local, 한국 시간 기준
@@ -98,7 +92,7 @@ export async function saveTeamSettings(teamId: string, formData: FormData) {
 }
 
 export async function confirmSchedule(teamId: string, date: string, formData: FormData) {
-  const user_id = await requireLeader(teamId);
+  const { user_id } = await requireMember(teamId);
   const start = Number(formData.get("start")), end = Number(formData.get("end"));
   if (!DATE.test(date) || !Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end > 48 || end <= start) {
     throw new Error("잘못된 시간");
@@ -109,7 +103,7 @@ export async function confirmSchedule(teamId: string, date: string, formData: Fo
 }
 
 export async function cancelSchedule(teamId: string, scheduleId: string) {
-  await requireLeader(teamId);
+  await requireMember(teamId);
   await db.from("confirmed_schedules").delete().eq("id", scheduleId).eq("team_id", teamId);
   revalidatePath(`/teams/${teamId}`, "layout");
 }
@@ -120,7 +114,7 @@ export async function cancelScheduleAndBack(teamId: string, scheduleId: string) 
 }
 
 export async function updateSchedule(teamId: string, scheduleId: string, formData: FormData) {
-  await requireLeader(teamId);
+  await requireMember(teamId);
   const date = String(formData.get("date") ?? "");
   const start = Number(formData.get("start")), end = Number(formData.get("end"));
   const text = (k: string, max: number) => String(formData.get(k) ?? "").trim().slice(0, max) || null;
@@ -135,4 +129,34 @@ export async function updateSchedule(teamId: string, scheduleId: string, formDat
   if (error) throw new Error(error.message);
   revalidatePath(`/teams/${teamId}`, "layout");
   redirect(`/teams/${teamId}/schedules/${scheduleId}?saved=1`);
+}
+
+// ── 팀 관리 (리더) ───────────────────────────────
+
+export async function renameTeam(teamId: string, formData: FormData) {
+  await requireLeader(teamId);
+  const name = String(formData.get("name") ?? "").trim().slice(0, 40);
+  if (!name) return;
+  await db.from("teams").update({ name }).eq("id", teamId);
+  revalidatePath(`/teams/${teamId}`, "layout");
+  revalidatePath("/");
+}
+
+export async function transferLeader(teamId: string, formData: FormData) {
+  const { user_id } = await requireLeader(teamId);
+  const to = String(formData.get("user_id") ?? "");
+  // 활동 중인 멤버에게만 넘길 수 있음
+  const { data } = await db.from("team_members").select("status").eq("team_id", teamId).eq("user_id", to).maybeSingle();
+  if (to === user_id || data?.status !== "active") throw new Error("넘길 수 없는 멤버");
+  await db.from("teams").update({ leader_id: to }).eq("id", teamId);
+  revalidatePath(`/teams/${teamId}`, "layout");
+  revalidatePath("/");
+}
+
+// 팀과 딸린 데이터(멤버, 확정 일정, 곡, 셋리스트) 전부 삭제. 멤버 개인 스케줄은 남음
+export async function deleteTeam(teamId: string) {
+  await requireLeader(teamId);
+  await db.from("teams").delete().eq("id", teamId);
+  revalidatePath("/");
+  redirect("/");
 }

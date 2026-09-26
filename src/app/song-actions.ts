@@ -3,27 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { requireMember } from "@/lib/auth";
 
-// 곡 / 연습곡 / 셋리스트. 추가·투표·연습 코멘트는 멤버 누구나, 상태 변경과 셋리스트 편집은 리더만
+// 곡 / 연습곡 / 셋리스트: 팀 멤버 누구나. 곡 삭제만 올린 사람 또는 리더
 
 const refresh = (teamId: string) => revalidatePath(`/teams/${teamId}`, "layout");
-
-async function requireMember(teamId: string) {
-  const user_id = await requireUser();
-  const [{ data: m }, { data: t }] = await Promise.all([
-    db.from("team_members").select("status").eq("team_id", teamId).eq("user_id", user_id).maybeSingle(),
-    db.from("teams").select("leader_id").eq("id", teamId).maybeSingle(),
-  ]);
-  if (m?.status !== "active" || !t) throw new Error("팀 멤버만 할 수 있어요");
-  return { user_id, isLeader: t.leader_id === user_id };
-}
-
-async function requireLeader(teamId: string) {
-  const me = await requireMember(teamId);
-  if (!me.isLeader) throw new Error("리더만 할 수 있어요");
-  return me;
-}
 
 // 곡/셋리스트/연습 배정 id → 팀 id (권한 체크용)
 async function teamOf(table: "songs" | "setlists", id: string) {
@@ -87,7 +71,7 @@ export async function toggleVote(songId: string) {
 // candidate → practicing, hold는 보류. 연습곡이 되면 연습 배정(멤버 코멘트용)을 하나 만듦
 export async function setSongStatus(songId: string, status: "candidate" | "practicing" | "hold") {
   const teamId = await teamOf("songs", songId);
-  await requireLeader(teamId);
+  await requireMember(teamId);
   await db.from("songs").update({ status }).eq("id", songId);
   if (status === "practicing") {
     const { data } = await db.from("practice_assignments").select("id").eq("song_id", songId).limit(1);
@@ -113,23 +97,38 @@ export async function saveNote(assignmentId: string, formData: FormData) {
 // ── 셋리스트 ────────────────────────────────────
 
 export async function createSetlist(teamId: string, formData: FormData) {
-  await requireLeader(teamId);
+  await requireMember(teamId);
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return;
-  await db.from("setlists").insert({ team_id: teamId, name: name.slice(0, 60) });
+  await db.from("setlists").insert({ team_id: teamId, name: name.slice(0, 60), performance_date: dateOrNull(formData) });
   refresh(teamId);
 }
 
+// 셋리스트 이름 / 공연 날짜 수정
+export async function updateSetlist(setlistId: string, formData: FormData) {
+  const teamId = await teamOf("setlists", setlistId);
+  await requireMember(teamId);
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return;
+  await db.from("setlists").update({ name: name.slice(0, 60), performance_date: dateOrNull(formData) }).eq("id", setlistId);
+  refresh(teamId);
+}
+
+const dateOrNull = (formData: FormData) => {
+  const v = String(formData.get("performance_date") ?? "");
+  return /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(Date.parse(v)) ? v : null;
+};
+
 export async function deleteSetlist(setlistId: string) {
   const teamId = await teamOf("setlists", setlistId);
-  await requireLeader(teamId);
+  await requireMember(teamId);
   await db.from("setlists").delete().eq("id", setlistId);
   refresh(teamId);
 }
 
 export async function addToSetlist(setlistId: string, formData: FormData) {
   const teamId = await teamOf("setlists", setlistId);
-  await requireLeader(teamId);
+  await requireMember(teamId);
   const songId = String(formData.get("song_id") ?? "");
   if ((await teamOf("songs", songId)) !== teamId) throw new Error("다른 팀 곡");
   const { data: last } = await db.from("setlist_items").select("position").eq("setlist_id", setlistId).order("position", { ascending: false }).limit(1);
@@ -142,14 +141,14 @@ export async function addToSetlist(setlistId: string, formData: FormData) {
 
 export async function removeFromSetlist(setlistId: string, songId: string) {
   const teamId = await teamOf("setlists", setlistId);
-  await requireLeader(teamId);
+  await requireMember(teamId);
   await db.from("setlist_items").delete().eq("setlist_id", setlistId).eq("song_id", songId);
   refresh(teamId);
 }
 
 export async function saveSetlistOrder(setlistId: string, songIds: string[]) {
   const teamId = await teamOf("setlists", setlistId);
-  await requireLeader(teamId);
+  await requireMember(teamId);
   // ponytail: 곡마다 update 한 번씩. 셋리스트는 많아야 20곡 남짓이라 충분
   await Promise.all(
     songIds.map((songId, position) =>
@@ -161,7 +160,7 @@ export async function saveSetlistOrder(setlistId: string, songIds: string[]) {
 
 export async function saveItemMemo(setlistId: string, songId: string, formData: FormData) {
   const teamId = await teamOf("setlists", setlistId);
-  await requireLeader(teamId);
+  await requireMember(teamId);
   const memo = String(formData.get("memo") ?? "").trim().slice(0, 300);
   await db.from("setlist_items").update({ memo: memo || null }).eq("setlist_id", setlistId).eq("song_id", songId);
   refresh(teamId);

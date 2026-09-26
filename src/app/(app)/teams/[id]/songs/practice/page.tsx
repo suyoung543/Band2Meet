@@ -27,7 +27,7 @@ export default async function PracticePage({ params }: PageProps<"/teams/[id]/so
   const songs = (data ?? []) as Song[];
 
   if (!songs.length) {
-    return <p className="text-sm text-zinc-500">연습 중인 곡이 없어요. {isLeader ? "후보함에서 “연습곡으로”를 눌러 지정하세요." : "리더가 후보함에서 연습곡을 지정하면 여기에 나와요."}</p>;
+    return <p className="text-sm text-zinc-500">연습 중인 곡이 없어요. 후보함에서 “연습곡으로”를 눌러 지정하세요.</p>;
   }
 
   return (
@@ -44,9 +44,7 @@ export default async function PracticePage({ params }: PageProps<"/teams/[id]/so
               </span>
               {s.artist && <span className="text-sm text-zinc-500">{s.artist}</span>}
               <div className="ml-auto flex gap-1">
-                {isLeader && (
-                  <form action={setSongStatus.bind(null, s.id, "candidate")}><button className={small}>후보로</button></form>
-                )}
+                <form action={setSongStatus.bind(null, s.id, "candidate")}><button className={small}>후보로</button></form>
                 {(isLeader || s.created_by === userId) && (
                   <form action={deleteSong.bind(null, s.id)}>
                     <ConfirmButton className={small} message={`"${s.title}"을(를) 삭제할까요? 멤버 코멘트와 셋리스트에 넣은 기록도 함께 지워져요.`}>삭제</ConfirmButton>

@@ -1,12 +1,14 @@
 import ConfirmButton from "@/components/ConfirmButton";
-import { addToSetlist, createSetlist, deleteSetlist } from "@/app/song-actions";
+import { addToSetlist, createSetlist, deleteSetlist, updateSetlist } from "@/app/song-actions";
 import { db } from "@/lib/db";
+import { dateLabel } from "@/lib/schedule";
 import { loadTeam } from "@/lib/team";
 import SetlistEditor, { Item } from "./editor";
 
 type Setlist = {
   id: string;
   name: string;
+  performance_date: string | null;
   setlist_items: { song_id: string; position: number; memo: string | null; songs: { title: string; artist: string | null; duration_sec: number | null } }[];
 };
 
@@ -14,13 +16,15 @@ const small = "rounded border px-2 py-1 text-xs hover:bg-zinc-200 dark:hover:bg-
 
 export default async function SetlistsPage({ params }: PageProps<"/teams/[id]/songs/setlists">) {
   const { id } = await params;
-  const { isLeader } = await loadTeam(id);
+  await loadTeam(id); // 멤버 확인
 
   const [{ data }, { data: songs }] = await Promise.all([
     db
       .from("setlists")
-      .select("id, name, setlist_items(song_id, position, memo, songs(title, artist, duration_sec))")
+      .select("id, name, performance_date, setlist_items(song_id, position, memo, songs(title, artist, duration_sec))")
       .eq("team_id", id)
+      // 공연 날짜 빠른 순, 날짜 없는 건 뒤로
+      .order("performance_date", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: false }),
     // 셋리스트에 넣을 수 있는 곡: 연습 중인 곡
     db.from("songs").select("id, title").eq("team_id", id).eq("status", "practicing").order("title"),
@@ -29,12 +33,11 @@ export default async function SetlistsPage({ params }: PageProps<"/teams/[id]/so
 
   return (
     <div className="flex flex-col gap-6">
-      {isLeader && (
-        <form action={createSetlist.bind(null, id)} className="flex gap-2">
-          <input name="name" placeholder="새 셋리스트 이름 (예: 10월 정기공연)" required maxLength={60} className="flex-1 rounded border bg-transparent px-3 py-2 text-sm" />
-          <button className="rounded bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:brightness-110">만들기</button>
-        </form>
-      )}
+      <form action={createSetlist.bind(null, id)} className="flex flex-wrap gap-2">
+        <input name="name" placeholder="새 셋리스트 이름 (예: 10월 정기공연)" required maxLength={60} className="min-w-0 flex-1 rounded border bg-transparent px-3 py-2 text-sm" />
+        <input type="date" name="performance_date" aria-label="공연 날짜" className="rounded border bg-transparent px-3 py-2 text-sm" />
+        <button className="rounded bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:brightness-110">만들기</button>
+      </form>
 
       {!setlists.length && <p className="text-sm text-zinc-500">아직 셋리스트가 없어요.</p>}
 
@@ -45,17 +48,33 @@ export default async function SetlistsPage({ params }: PageProps<"/teams/[id]/so
         const addable = (songs ?? []).filter((s) => !items.some((i) => i.song_id === s.id));
         return (
           <section key={sl.id} className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-baseline gap-x-2">
               <h2 className="font-semibold">{sl.name}</h2>
-              {isLeader && (
-                <form action={deleteSetlist.bind(null, sl.id)} className="ml-auto">
-                  <ConfirmButton className={small} message={`"${sl.name}" 셋리스트를 삭제할까요? 곡은 그대로 남아요.`}>셋리스트 삭제</ConfirmButton>
-                </form>
-              )}
+              <span className="text-sm text-zinc-500">{sl.performance_date ? `공연 ${dateLabel(sl.performance_date)}` : "공연 날짜 미정"}</span>
+              <details className="relative ml-auto">
+                <summary className={`${small} cursor-pointer list-none`}>셋리스트 수정 · 삭제</summary>
+                <div className="absolute right-0 z-20 mt-2 flex w-72 flex-col gap-3 rounded border bg-background p-3 text-sm shadow-lg">
+                  <form action={updateSetlist.bind(null, sl.id)} className="flex flex-col gap-2">
+                    <label className="flex flex-col gap-1">
+                      <span className="text-xs text-zinc-500">이름</span>
+                      <input name="name" defaultValue={sl.name} required maxLength={60} className="rounded border bg-transparent px-2 py-1" />
+                    </label>
+                    <label className="flex flex-col gap-1">
+                      <span className="text-xs text-zinc-500">공연 날짜</span>
+                      <input type="date" name="performance_date" defaultValue={sl.performance_date ?? ""} className="rounded border bg-transparent px-2 py-1" />
+                    </label>
+                    <button className="rounded bg-accent px-3 py-1.5 font-medium text-accent-fg hover:brightness-110">저장</button>
+                  </form>
+                  <form action={deleteSetlist.bind(null, sl.id)} className="border-t pt-3">
+                    <ConfirmButton className="text-rose-600 hover:underline" message={`"${sl.name}" 셋리스트를 삭제할까요? 곡은 그대로 남아요.`}>
+                      셋리스트 삭제
+                    </ConfirmButton>
+                  </form>
+                </div>
+              </details>
             </div>
-            <SetlistEditor setlistId={sl.id} items={items} isLeader={isLeader} />
-            {isLeader && (
-              addable.length ? (
+            <SetlistEditor setlistId={sl.id} items={items} />
+            {addable.length ? (
                 <form action={addToSetlist.bind(null, sl.id)} className="flex gap-2 text-sm">
                   <select name="song_id" className="flex-1 rounded border bg-transparent px-2 py-1">
                     {addable.map((s) => (
@@ -66,8 +85,8 @@ export default async function SetlistsPage({ params }: PageProps<"/teams/[id]/so
                 </form>
               ) : (
                 <p className="text-xs text-zinc-500">추가할 수 있는 곡이 없어요. 연습 중인 곡만 넣을 수 있어요.</p>
-              )
-            )}
+              )}
+
           </section>
         );
       })}

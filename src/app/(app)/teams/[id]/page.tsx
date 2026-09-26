@@ -15,7 +15,7 @@ function dDay(deadline: string) {
 
 export default async function DashboardPage({ params, searchParams }: PageProps<"/teams/[id]">) {
   const { id } = await params;
-  const { team, active, isLeader } = await loadTeam(id);
+  const { team, active } = await loadTeam(id);
   const total = active.length;
   const nick = new Map(active.map((m) => [m.user_id, m.users.nickname]));
 
@@ -23,11 +23,7 @@ export default async function DashboardPage({ params, searchParams }: PageProps<
     return (
       <p className="text-sm text-zinc-500">
         아직 수합 기간이 정해지지 않았어요.{" "}
-        {isLeader ? (
-          <Link href={`/teams/${id}/settings`} className="text-accent underline">수합 설정하기</Link>
-        ) : (
-          "리더가 설정하면 여기에 후보 시간이 나와요."
-        )}
+        <Link href={`/teams/${id}/settings`} className="text-accent underline">수합 설정하기</Link>
       </p>
     );
   }

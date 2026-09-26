@@ -1,5 +1,6 @@
 import ConfirmButton from "@/components/ConfirmButton";
-import { approveMember, removeMember } from "@/app/actions";
+import DialogButton from "@/components/DialogButton";
+import { approveMember, deleteTeam, removeMember, renameTeam, transferLeader } from "@/app/actions";
 import { loadTeam } from "@/lib/team";
 
 const small = "rounded border px-2 py-1 text-xs hover:bg-zinc-200 dark:hover:bg-zinc-700";
@@ -50,6 +51,42 @@ export default async function MembersPage({ params }: PageProps<"/teams/[id]/mem
           ))}
         </ul>
       </section>
+
+      {isLeader && (
+        <section className="flex flex-col gap-2 border-t pt-6">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+            <DialogButton label="팀 이름 변경" title="팀 이름 변경" className="text-zinc-600 hover:underline dark:text-zinc-300">
+              <form action={renameTeam.bind(null, team.id)} className="flex flex-col gap-3">
+                <input name="name" defaultValue={team.name} required maxLength={40} autoFocus className="rounded border bg-transparent px-3 py-2 text-sm" />
+                <button className="rounded bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:brightness-110">저장</button>
+              </form>
+            </DialogButton>
+
+            {active.length > 1 && (
+              <DialogButton label="리더 넘기기" title="리더 넘기기" className="text-zinc-600 hover:underline dark:text-zinc-300">
+                <form action={transferLeader.bind(null, team.id)} className="flex flex-col gap-3">
+                  <p className="text-xs text-zinc-500">넘기고 나면 팀 관리 권한이 새 리더에게 가요.</p>
+                  <select name="user_id" className="rounded border bg-transparent px-3 py-2 text-sm">
+                    {active.filter((m) => m.user_id !== userId).map((m) => (
+                      <option key={m.user_id} value={m.user_id}>{m.users.nickname}</option>
+                    ))}
+                  </select>
+                  <button className="rounded bg-accent px-4 py-2 text-sm font-medium text-accent-fg hover:brightness-110">넘기기</button>
+                </form>
+              </DialogButton>
+            )}
+
+            <form action={deleteTeam.bind(null, team.id)}>
+              <ConfirmButton
+                className="text-rose-600 hover:underline"
+                message={`"${team.name}" 팀을 삭제할까요?\n확정 일정, 곡, 셋리스트가 모두 지워지고 되돌릴 수 없어요.\n(멤버들의 개인 스케줄은 남아요)`}
+              >
+                팀 삭제
+              </ConfirmButton>
+            </form>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

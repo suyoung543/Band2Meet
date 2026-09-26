@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { saveTeamSettings } from "@/app/actions";
 import { loadTeam } from "@/lib/team";
 
@@ -16,8 +15,7 @@ const field = "rounded border bg-transparent px-3 py-2 text-sm";
 export default async function SettingsPage({ params, searchParams }: PageProps<"/teams/[id]/settings">) {
   const { id } = await params;
   const { error } = await searchParams;
-  const { team, isLeader } = await loadTeam(id);
-  if (!isLeader) notFound();
+  const { team } = await loadTeam(id);
 
   return (
     <form action={saveTeamSettings.bind(null, team.id)} className="flex max-w-md flex-col gap-4">
