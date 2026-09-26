@@ -52,7 +52,7 @@ export default async function SetlistsPage({ params }: PageProps<"/teams/[id]/so
           <section key={sl.id} className="flex flex-col gap-2">
             <div className="flex flex-wrap items-baseline gap-x-2">
               <h2 className="font-semibold">{sl.name}</h2>
-              <span className="text-sm text-zinc-500">{sl.performance_date ? `공연 ${dateLabel(sl.performance_date)}` : "공연 날짜 미정"}</span>
+              <span className="text-sm text-zinc-500">{sl.performance_date ? `공연 ${sl.performance_date.slice(2).replaceAll("-", "/")}(${dateLabel(sl.performance_date).slice(-2, -1)})` : "공연 날짜 미정"}</span>
               <Collapsible className="relative ml-auto">
                 <summary className={`${small} cursor-pointer list-none`}>셋리스트 수정 · 삭제</summary>
                 <div className="absolute right-0 z-20 mt-2 flex w-72 flex-col gap-3 rounded border bg-background p-3 text-sm shadow-lg">
