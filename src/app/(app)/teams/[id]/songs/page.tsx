@@ -3,6 +3,7 @@ import { addSong, deleteSong, setSongStatus, toggleVote } from "@/app/song-actio
 import { db } from "@/lib/db";
 import { durationLabel } from "@/lib/schedule";
 import { loadTeam } from "@/lib/team";
+import SongEdit from "./edit";
 
 type Song = {
   id: string;
@@ -66,6 +67,7 @@ export default async function CandidatesPage({ params, searchParams }: PageProps
           {s.status === "hold" && (
             <form action={setSongStatus.bind(null, s.id, "candidate")}><button className={small}>후보로</button></form>
           )}
+          <SongEdit song={s} className={small} />
           {(isLeader || s.created_by === userId) && (
             <form action={deleteSong.bind(null, s.id)}><ConfirmButton className={small} message={`"${s.title}"을(를) 삭제할까요? 투표 기록도 함께 지워져요.`}>삭제</ConfirmButton></form>
           )}
@@ -99,7 +101,7 @@ export default async function CandidatesPage({ params, searchParams }: PageProps
       )}
 
       {held.length > 0 && (
-        <details>
+        <details open>
           <summary className="cursor-pointer text-sm text-zinc-500">보류 {held.length}</summary>
           <ul className="mt-2 flex flex-col divide-y rounded border opacity-70">{held.map(row)}</ul>
         </details>

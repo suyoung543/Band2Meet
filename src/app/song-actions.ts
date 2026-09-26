@@ -32,24 +32,41 @@ function parseDuration(v: string) {
 
 // ── 후보함 ──────────────────────────────────────
 
+// 곡 추가/수정 폼 → 저장할 값. 잘못된 입력이면 에러 코드
+function songFields(formData: FormData) {
+  const title = String(formData.get("title") ?? "").trim().slice(0, 100);
+  const artist = String(formData.get("artist") ?? "").trim().slice(0, 100);
+  const url = String(formData.get("ref_url") ?? "").trim();
+  if (!title) return { error: "title" } as const;
+  // javascript: 같은 링크 막기
+  if (url && !/^https?:\/\//i.test(url)) return { error: "url" } as const;
+  return {
+    fields: {
+      title,
+      artist: artist || null,
+      ref_url: url || null,
+      duration_sec: parseDuration(String(formData.get("duration") ?? "")),
+    },
+  };
+}
+
 export async function addSong(teamId: string, formData: FormData) {
   const { user_id } = await requireMember(teamId);
-  const title = String(formData.get("title") ?? "").trim();
-  const artist = String(formData.get("artist") ?? "").trim();
-  const url = String(formData.get("ref_url") ?? "").trim();
-  if (!title) redirect(`/teams/${teamId}/songs?error=title`);
-  // javascript: 같은 링크 막기
-  if (url && !/^https?:\/\//i.test(url)) redirect(`/teams/${teamId}/songs?error=url`);
-  const { error } = await db.from("songs").insert({
-    team_id: teamId,
-    title,
-    artist: artist || null,
-    ref_url: url || null,
-    duration_sec: parseDuration(String(formData.get("duration") ?? "")),
-    created_by: user_id,
-  });
+  const r = songFields(formData);
+  if (r.error) redirect(`/teams/${teamId}/songs?error=${r.error}`);
+  const { error } = await db.from("songs").insert({ team_id: teamId, ...r.fields, created_by: user_id });
   if (error) throw new Error(error.message);
   redirect(`/teams/${teamId}/songs`);
+}
+
+// 제목/아티스트/링크/길이 수정. 멤버 누구나
+export async function updateSong(songId: string, formData: FormData) {
+  const teamId = await teamOf("songs", songId);
+  await requireMember(teamId);
+  const r = songFields(formData);
+  if (r.error) throw new Error(r.error === "title" ? "제목을 입력해 주세요" : "링크는 http:// 또는 https://로 시작해야 해요");
+  await db.from("songs").update(r.fields).eq("id", songId);
+  refresh(teamId);
 }
 
 export async function deleteSong(songId: string) {
@@ -68,8 +85,8 @@ export async function toggleVote(songId: string) {
   refresh(teamId);
 }
 
-// candidate → practicing, hold는 보류. 연습곡이 되면 연습 배정(멤버 코멘트용)을 하나 만듦
-export async function setSongStatus(songId: string, status: "candidate" | "practicing" | "hold") {
+// candidate → practicing → done, hold는 보류. 연습곡이 되면 연습 배정(멤버 코멘트용)을 하나 만듦
+export async function setSongStatus(songId: string, status: "candidate" | "practicing" | "done" | "hold") {
   const teamId = await teamOf("songs", songId);
   await requireMember(teamId);
   await db.from("songs").update({ status }).eq("id", songId);

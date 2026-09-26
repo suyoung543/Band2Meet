@@ -9,6 +9,7 @@ type Setlist = {
   id: string;
   name: string;
   performance_date: string | null;
+  created_at: string;
   setlist_items: { song_id: string; position: number; memo: string | null; songs: { title: string; artist: string | null; duration_sec: number | null } }[];
 };
 
@@ -21,15 +22,15 @@ export default async function SetlistsPage({ params }: PageProps<"/teams/[id]/so
   const [{ data }, { data: songs }] = await Promise.all([
     db
       .from("setlists")
-      .select("id, name, performance_date, setlist_items(song_id, position, memo, songs(title, artist, duration_sec))")
+      .select("id, name, performance_date, created_at, setlist_items(song_id, position, memo, songs(title, artist, duration_sec))")
       .eq("team_id", id)
-      // 공연 날짜 빠른 순, 날짜 없는 건 뒤로
-      .order("performance_date", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: false }),
-    // 셋리스트에 넣을 수 있는 곡: 연습 중인 곡
-    db.from("songs").select("id, title").eq("team_id", id).eq("status", "practicing").order("title"),
+    // 셋리스트에 넣을 수 있는 곡: 연습 중 + 연습 완료
+    db.from("songs").select("id, title").eq("team_id", id).in("status", ["practicing", "done"]).order("title"),
   ]);
-  const setlists = (data ?? []) as unknown as Setlist[];
+  // 공연 날짜 기준 최신순. 공연 날짜가 없으면 만든 날짜로 대신 비교
+  const sortKey = (sl: Setlist) => sl.performance_date ?? sl.created_at.slice(0, 10);
+  const setlists = ((data ?? []) as unknown as Setlist[]).sort((a, b) => sortKey(b).localeCompare(sortKey(a)));
 
   return (
     <div className="flex flex-col gap-6">
@@ -84,7 +85,7 @@ export default async function SetlistsPage({ params }: PageProps<"/teams/[id]/so
                   <button className={small}>곡 추가</button>
                 </form>
               ) : (
-                <p className="text-xs text-zinc-500">추가할 수 있는 곡이 없어요. 연습 중인 곡만 넣을 수 있어요.</p>
+                <p className="text-xs text-zinc-500">추가할 수 있는 곡이 없어요. 연습 중이거나 연습 완료한 곡을 넣을 수 있어요.</p>
               )}
 
           </section>
