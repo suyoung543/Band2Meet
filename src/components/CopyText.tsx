@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 
-// 공지 미리보기 + 복사 버튼
-export default function CopyText({ text }: { text: string }) {
+// 공지 미리보기 + 복사 버튼 (+ 옆에 붙일 다른 버튼)
+export default function CopyText({ text, extra }: { text: string; extra?: React.ReactNode }) {
   const [copied, setCopied] = useState<"ok" | "fail" | null>(null);
   return (
     <div className="flex flex-col gap-2">
@@ -23,6 +23,7 @@ export default function CopyText({ text }: { text: string }) {
         >
           공지 복사
         </button>
+        {extra}
         {copied === "ok" && <span className="text-sm text-zinc-500">복사됐어요. 카톡방에 붙여넣으세요.</span>}
         {copied === "fail" && <span className="text-sm text-rose-600">복사에 실패했어요. 위 글을 길게 눌러 직접 복사해 주세요.</span>}
       </div>

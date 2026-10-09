@@ -68,7 +68,7 @@ export default async function SetlistsPage({ params }: PageProps<"/teams/[id]/so
                     <button className="rounded bg-accent px-3 py-1.5 font-medium text-accent-fg hover:brightness-110">저장</button>
                   </form>
                   <form action={deleteSetlist.bind(null, sl.id)} className="border-t pt-3">
-                    <ConfirmButton className="text-rose-600 hover:underline" message={`"${sl.name}" 셋리스트를 삭제할까요? 곡은 그대로 남아요.`}>
+                    <ConfirmButton className="text-rose-600 hover:underline" message={`"${sl.name}" 셋리스트를 삭제할까요? 곡은 그대로 남아요.`} confirmLabel="삭제">
                       셋리스트 삭제
                     </ConfirmButton>
                   </form>

@@ -27,7 +27,7 @@ export default async function MembersPage({ params }: PageProps<"/teams/[id]/mem
                   <button className={small}>승인</button>
                 </form>
                 <form action={removeMember.bind(null, team.id, m.user_id)}>
-                  <ConfirmButton className={small} message={`${m.users.nickname}님의 참여 요청을 거절할까요?`}>거절</ConfirmButton>
+                  <ConfirmButton className={small} message={`${m.users.nickname}님의 참여 요청을 거절할까요?`} confirmLabel="거절">거절</ConfirmButton>
                 </form>
               </li>
             ))}
@@ -44,7 +44,7 @@ export default async function MembersPage({ params }: PageProps<"/teams/[id]/mem
               {m.user_id === team.leader_id && <span className="text-xs text-accent">리더</span>}
               {isLeader && m.user_id !== userId && (
                 <form action={removeMember.bind(null, team.id, m.user_id)} className="ml-auto">
-                  <ConfirmButton className={small} message={`${m.users.nickname}님을 팀에서 내보낼까요?\n다시 들어오려면 초대코드로 참여 요청을 해야 해요.`}>내보내기</ConfirmButton>
+                  <ConfirmButton className={small} message={`${m.users.nickname}님을 팀에서 내보낼까요?\n다시 들어오려면 초대코드로 참여 요청을 해야 해요.`} confirmLabel="내보내기">내보내기</ConfirmButton>
                 </form>
               )}
             </li>
@@ -80,7 +80,7 @@ export default async function MembersPage({ params }: PageProps<"/teams/[id]/mem
               <ConfirmButton
                 className="text-rose-600 hover:underline"
                 message={`"${team.name}" 팀을 삭제할까요?\n확정 일정, 곡, 셋리스트가 모두 지워지고 되돌릴 수 없어요.\n(멤버들의 개인 스케줄은 남아요)`}
-              >
+               confirmLabel="삭제">
                 팀 삭제
               </ConfirmButton>
             </form>

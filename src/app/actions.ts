@@ -6,6 +6,7 @@ import { after } from "next/server";
 import { db } from "@/lib/db";
 import { requireLeader, requireMember } from "@/lib/auth";
 import { checkCollectionFull, notify, teamMemberIds } from "@/lib/notify";
+import { noticeBody } from "@/lib/notice";
 import { dateLabel, slotLabel } from "@/lib/schedule";
 import { requireUser } from "@/lib/session";
 
@@ -182,6 +183,25 @@ export async function updateSchedule(teamId: string, scheduleId: string, formDat
   if (error) throw new Error(error.message);
   revalidatePath(`/teams/${teamId}`, "layout");
   redirect(`/teams/${teamId}/schedules/${scheduleId}?saved=1`);
+}
+
+// 확정 일정 공지를 팀 전원에게 알림으로 (내용은 DB의 최신 값으로 서버에서 다시 만듦)
+export async function sendScheduleNotice(teamId: string, scheduleId: string) {
+  await requireMember(teamId);
+  const { data: s } = await db
+    .from("confirmed_schedules")
+    .select("date, start_slot, end_slot, place, todo, memo, teams(name)")
+    .eq("id", scheduleId)
+    .eq("team_id", teamId)
+    .single();
+  if (!s) throw new Error("없는 일정");
+  notify(await teamMemberIds(teamId), {
+    title: `[${(s.teams as unknown as { name: string }).name}] 합주 공지`,
+    body: noticeBody(s),
+    url: `/teams/${teamId}/schedules/${scheduleId}`,
+    teamId,
+  });
+  redirect(`/teams/${teamId}/schedules/${scheduleId}?sent=1`);
 }
 
 // ── 팀 관리 (리더) ───────────────────────────────

@@ -41,7 +41,7 @@ export default async function DatePage({ params, searchParams }: PageProps<"/tea
               <li key={c.id} className="flex items-center gap-2">
                 <Link href={`/teams/${id}/schedules/${c.id}`} className="font-medium text-accent hover:underline">{slotLabel(c.start_slot)}–{slotLabel(c.end_slot)}</Link>
                 <form action={cancelSchedule.bind(null, id, c.id)}>
-                  <ConfirmButton className={small} message="이 합주 확정을 취소할까요?">확정 취소</ConfirmButton>
+                  <ConfirmButton className={small} message="이 합주 확정을 취소할까요?" confirmLabel="확정 취소">확정 취소</ConfirmButton>
                 </form>
               </li>
             ))}

@@ -56,7 +56,7 @@ export default async function SettingsPage({ params, searchParams }: PageProps<"
           <ConfirmButton
             className="self-start text-sm text-rose-600 hover:underline"
             message={"현재 수합을 초기화할까요?\n수합 기간과 입력 마감이 지워지고 대시보드가 비워져요.\n멤버들의 시간표와 확정된 합주는 그대로 남아요."}
-          >
+           confirmLabel="초기화">
             수합 초기화
           </ConfirmButton>
           <span className="text-xs text-zinc-500">합주를 다 잡았으면 초기화해서 대시보드를 비워두세요. 다음 수합 때 기간만 다시 정하면 돼요.</span>

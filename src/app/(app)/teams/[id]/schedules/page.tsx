@@ -37,7 +37,7 @@ export default async function SchedulesPage({ params }: PageProps<"/teams/[id]/s
           </Link>
           {canCancel && (
             <form action={cancelSchedule.bind(null, id, c.id)} className="ml-auto">
-              <ConfirmButton className={small} message="이 합주 확정을 취소할까요?">확정 취소</ConfirmButton>
+              <ConfirmButton className={small} message="이 합주 확정을 취소할까요?" confirmLabel="확정 취소">확정 취소</ConfirmButton>
             </form>
           )}
         </li>

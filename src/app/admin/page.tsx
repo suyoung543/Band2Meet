@@ -252,7 +252,7 @@ function TeamActions({ team: t }: { team: Team }) {
           <ConfirmButton
             className="rounded bg-accent px-4 py-2 font-medium text-accent-fg hover:brightness-110"
             message={`"${t.name}"의 리더를 선택한 멤버로 바꿀까요?\n지금 리더는 팀 관리 권한이 사라져요.`}
-          >
+           confirmLabel="변경" safe>
             변경
           </ConfirmButton>
         </form>
@@ -265,9 +265,9 @@ function TeamActions({ team: t }: { team: Team }) {
             셋리스트가 모두 지워지고 되돌릴 수 없어요. 멤버들의 개인 스케줄은 남아요.
           </p>
           <ConfirmButton
-            className="rounded bg-rose-600 px-4 py-2 font-medium text-white hover:brightness-110"
+            className="rounded bg-danger px-4 py-2 font-medium text-white hover:brightness-110"
             message={`정말 "${t.name}" 팀을 삭제할까요? 되돌릴 수 없어요.`}
-          >
+           confirmLabel="삭제">
             삭제
           </ConfirmButton>
         </form>

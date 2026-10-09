@@ -30,7 +30,7 @@ export default async function NotificationsPage() {
         <h1 className="text-xl font-semibold">알림</h1>
         {!!data?.length && (
           <form action={clearNotifications}>
-            <ConfirmButton className="text-sm text-zinc-500 hover:text-rose-600 hover:underline" message="알림을 모두 지울까요?">
+            <ConfirmButton className="text-sm text-zinc-500 hover:text-rose-600 hover:underline" message="알림을 모두 지울까요?" confirmLabel="지우기">
               모두 지우기
             </ConfirmButton>
           </form>

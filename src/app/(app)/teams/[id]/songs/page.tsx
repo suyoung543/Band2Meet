@@ -70,7 +70,7 @@ export default async function CandidatesPage({ params, searchParams }: PageProps
           )}
           <SongEdit song={s} className={small} />
           {(isLeader || s.created_by === userId) && (
-            <form action={deleteSong.bind(null, s.id)}><ConfirmButton className={small} message={`"${s.title}"을(를) 삭제할까요? 투표 기록도 함께 지워져요.`}>삭제</ConfirmButton></form>
+            <form action={deleteSong.bind(null, s.id)}><ConfirmButton className={small} message={`"${s.title}"을(를) 삭제할까요? 투표 기록도 함께 지워져요.`} confirmLabel="삭제">삭제</ConfirmButton></form>
           )}
         </div>
       </li>

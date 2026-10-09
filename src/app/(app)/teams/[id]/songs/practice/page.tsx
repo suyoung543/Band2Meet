@@ -50,7 +50,7 @@ export default async function PracticePage({ params }: PageProps<"/teams/[id]/so
       <SongEdit song={s} className={small} />
       {(isLeader || s.created_by === userId) && (
         <form action={deleteSong.bind(null, s.id)}>
-          <ConfirmButton className={small} message={`"${s.title}"을(를) 삭제할까요? 멤버 코멘트와 셋리스트에 넣은 기록도 함께 지워져요.`}>삭제</ConfirmButton>
+          <ConfirmButton className={small} message={`"${s.title}"을(를) 삭제할까요? 멤버 코멘트와 셋리스트에 넣은 기록도 함께 지워져요.`} confirmLabel="삭제">삭제</ConfirmButton>
         </form>
       )}
     </div>

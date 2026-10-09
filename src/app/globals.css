@@ -16,6 +16,7 @@
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
   --color-yes: var(--yes);
+  --color-danger: #d6284e; /* 팝업의 위험 동작 버튼 (rose-600보다 채도 살짝 낮춤) */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
