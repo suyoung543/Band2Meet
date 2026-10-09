@@ -2,8 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { db } from "@/lib/db";
 import { requireLeader, requireMember } from "@/lib/auth";
+import { checkCollectionFull, notify, teamMemberIds } from "@/lib/notify";
+import { dateLabel, slotLabel } from "@/lib/schedule";
 import { requireUser } from "@/lib/session";
 
 const SLOTS = /^[ynm]{48}$/;
@@ -15,6 +18,7 @@ export async function saveBase(week: string[]) {
   if (week.length !== 7 || !week.every((r) => SLOTS.test(r))) throw new Error("잘못된 입력");
   const { error } = await db.from("base_patterns").upsert(week.map((slots, day) => ({ user_id, day, slots })));
   if (error) throw new Error(error.message);
+  after(() => checkCollectionFull(user_id));
 }
 
 export async function saveException(date: string, slots: string) {
@@ -22,6 +26,7 @@ export async function saveException(date: string, slots: string) {
   if (!DATE.test(date) || !SLOTS.test(slots)) throw new Error("잘못된 입력");
   const { error } = await db.from("exceptions").upsert({ user_id, date, slots });
   if (error) throw new Error(error.message);
+  after(() => checkCollectionFull(user_id));
 }
 
 export async function deleteException(date: string) {
@@ -45,16 +50,35 @@ export async function createTeam(formData: FormData) {
 export async function joinTeam(formData: FormData) {
   const user_id = await requireUser();
   const code = String(formData.get("code") ?? "").trim().toLowerCase();
-  const { data: team } = await db.from("teams").select("id").eq("invite_code", code).maybeSingle();
+  const { data: team } = await db.from("teams").select("id, name, leader_id").eq("invite_code", code).maybeSingle();
   if (!team) redirect("/teams/join?error=code");
-  // 이미 멤버/대기 중이면 그대로 둠
-  await db.from("team_members").upsert({ team_id: team.id, user_id }, { onConflict: "team_id,user_id", ignoreDuplicates: true });
+  // 이미 멤버/대기 중이면 그대로 둠 (새로 들어간 경우에만 행이 돌아옴)
+  const { data: added } = await db
+    .from("team_members")
+    .upsert({ team_id: team.id, user_id }, { onConflict: "team_id,user_id", ignoreDuplicates: true })
+    .select("user_id");
+  if (added?.length) {
+    notify([team.leader_id], {
+      title: `[${team.name}] 참여 요청`,
+      body: `${await nickname(user_id)}님이 참여를 요청했어요. 승인해 주세요.`,
+      url: `/teams/${team.id}/members`,
+      teamId: team.id,
+    });
+  }
   redirect(`/teams/${team.id}`);
 }
 
 export async function approveMember(teamId: string, userId: string) {
   await requireLeader(teamId);
-  await db.from("team_members").update({ status: "active" }).eq("team_id", teamId).eq("user_id", userId);
+  const { data } = await db.from("team_members").update({ status: "active" }).eq("team_id", teamId).eq("user_id", userId).eq("status", "pending").select("teams(name)");
+  if (data?.length) {
+    notify([userId], {
+      title: `[${(data[0].teams as unknown as { name: string }).name}] 참여가 승인됐어요`,
+      body: "이제 팀 일정과 곡을 볼 수 있어요. 내 스케줄도 입력해 주세요.",
+      url: `/teams/${teamId}`,
+      teamId,
+    });
+  }
   revalidatePath(`/teams/${teamId}`, "layout");
 }
 
@@ -70,7 +94,9 @@ export async function removeMember(teamId: string, userId: string) {
 const MAX_RANGE_DAYS = 92;
 
 export async function saveTeamSettings(teamId: string, formData: FormData) {
-  await requireMember(teamId);
+  const { user_id } = await requireMember(teamId);
+  const { data: before } = await db.from("teams").select("name, collect_start").eq("id", teamId).single();
+  const starting = !before?.collect_start; // 진행 중인 수합이 없다가 새로 시작
   const start = String(formData.get("collect_start") ?? "");
   const end = String(formData.get("collect_end") ?? "");
   const deadline = String(formData.get("deadline") ?? ""); // datetime-local, 한국 시간 기준
@@ -85,16 +111,25 @@ export async function saveTeamSettings(teamId: string, formData: FormData) {
       collect_end: end,
       deadline: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(deadline) ? `${deadline}:00+09:00` : null,
       min_block_slots: minSlots,
+      ...(starting ? { collect_done_notified: false } : {}),
     })
     .eq("id", teamId);
   if (error) throw new Error(error.message);
+  if (starting) {
+    notify(await teamMemberIds(teamId), {
+      title: `[${before?.name}] 일정 수합이 시작됐어요`,
+      body: `${dateLabel(start)} ~ ${dateLabel(end)} 중 가능한 시간을 입력해 주세요.`,
+      url: "/schedule",
+      teamId,
+    });
+  }
   redirect(`/teams/${teamId}`);
 }
 
 // 진행 중인 수합 끝내기: 기간·마감만 비움. 개인 시간표와 확정 합주는 그대로
 export async function resetCollection(teamId: string) {
   await requireMember(teamId);
-  await db.from("teams").update({ collect_start: null, collect_end: null, deadline: null }).eq("id", teamId);
+  await db.from("teams").update({ collect_start: null, collect_end: null, deadline: null, collect_done_notified: false }).eq("id", teamId);
   revalidatePath(`/teams/${teamId}`, "layout");
   redirect(`/teams/${teamId}`);
 }
@@ -105,8 +140,18 @@ export async function confirmSchedule(teamId: string, date: string, formData: Fo
   if (!DATE.test(date) || !Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end > 48 || end <= start) {
     throw new Error("잘못된 시간");
   }
-  const { error } = await db.from("confirmed_schedules").insert({ team_id: teamId, date, start_slot: start, end_slot: end, created_by: user_id });
+  const { data: sc, error } = await db
+    .from("confirmed_schedules")
+    .insert({ team_id: teamId, date, start_slot: start, end_slot: end, created_by: user_id })
+    .select("id, teams(name)")
+    .single();
   if (error) throw new Error(error.message);
+  notify(await teamMemberIds(teamId), {
+    title: `[${(sc.teams as unknown as { name: string }).name}] 합주가 확정됐어요`,
+    body: `${dateLabel(date)} ${slotLabel(start)}–${slotLabel(end)}`,
+    url: `/teams/${teamId}/schedules/${sc.id}`,
+    teamId,
+  });
   revalidatePath(`/teams/${teamId}`, "layout");
 }
 
@@ -167,4 +212,9 @@ export async function deleteTeam(teamId: string) {
   await db.from("teams").delete().eq("id", teamId);
   revalidatePath("/");
   redirect("/");
+}
+
+async function nickname(userId: string) {
+  const { data } = await db.from("users").select("nickname").eq("id", userId).single();
+  return data?.nickname ?? "누군가";
 }

@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import ScheduleGrid, { Legend } from "./ScheduleGrid";
 import MiniCalendar from "./MiniCalendar";
-import { DAYS, Status, Week, dayIndex, encodeSlots, slotLabel } from "@/lib/schedule";
+import { DAYS, STATUS_COLOR, Status, Week, dayIndex, encodeSlots, slotLabel } from "@/lib/schedule";
 import { deleteException, saveBase, saveException } from "@/app/actions";
 
 export type Rehearsal = { date: string; start: number; end: number; team: string };
@@ -14,6 +14,7 @@ export default function MySchedulePage({ initialBase, initialExceptions, rehears
   const [base, setBase] = useState(initialBase);
   const [exceptions, setExceptions] = useState(initialExceptions);
   const [date, setDate] = useState<string | null>(null);
+  const [editingBase, setEditingBase] = useState(false); // 기본 시간표는 [수정]을 눌러야 바뀜 (실수 방지)
   const [saveState, setSaveState] = useState<"saved" | "saving" | "error">("saved");
 
   // 드래그 중엔 칸마다 onChange가 오므로 400ms 멈추면 저장. key별로 따로 (기본 시간표 / 날짜마다)
@@ -40,6 +41,12 @@ export default function MySchedulePage({ initialBase, initialExceptions, rehears
   const dayRehearsals = rehearsals.filter((r) => r.date === date);
   const locked: (string | null)[] = Array(48).fill(null);
   for (const r of dayRehearsals) locked.fill(r.team, r.start, r.end);
+  // 선택한 날짜의 그리드 저장 (드래그/빠른 수정 공용)
+  const setDay = (col: Status[]) => {
+    if (!date) return;
+    setExceptions((e) => ({ ...e, [date]: col }));
+    run(date, () => saveException(date, encodeSlots(col)));
+  };
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 p-4">
@@ -67,24 +74,53 @@ export default function MySchedulePage({ initialBase, initialExceptions, rehears
       <Legend rehearsal={tab === "exception"} />
 
       {tab === "base" ? (
-        <ScheduleGrid
-          columns={DAYS}
-          values={base}
-          onChange={(v) => {
-            setBase(v);
-            run("base", () => saveBase(v.map(encodeSlots)));
-          }}
-        />
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="flex-1 text-xs text-zinc-500">
+              {editingBase ? "칸을 누르거나 끌어서 수정하세요. 바로 저장돼요." : "매주 반복되는 시간표예요. 바꾸려면 수정을 누르세요."}
+            </span>
+            <button
+              onClick={() => setEditingBase((v) => !v)}
+              className={
+                editingBase
+                  ? "rounded bg-accent px-3 py-1 font-medium text-accent-fg hover:brightness-110"
+                  : "rounded border px-3 py-1 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+              }
+            >
+              {editingBase ? "완료" : "수정"}
+            </button>
+          </div>
+          <ScheduleGrid
+            columns={DAYS}
+            values={base}
+            readOnly={!editingBase}
+            onChange={(v) => {
+              setBase(v);
+              run("base", () => saveBase(v.map(encodeSlots)));
+            }}
+          />
+        </div>
       ) : (
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           <MiniCalendar selected={date} marked={new Set(Object.keys(exceptions))} rehearsals={new Set(rehearsals.map((r) => r.date))} onSelect={setDate} />
           {date && dateValues ? (
             <div className="flex flex-1 flex-col gap-2">
-              <div className="flex items-center justify-between text-sm">
-                <span>
-                  {date} ({DAYS[dayIndex(new Date(date + "T00:00"))]})
-                  {exceptions[date] ? <span className="ml-2 text-orange-600">수정됨</span> : null}
-                </span>
+              <span className="text-sm">
+                {date} ({DAYS[dayIndex(new Date(date + "T00:00"))]})
+                {exceptions[date] ? <span className="ml-2 text-orange-600">수정됨</span> : null}
+              </span>
+              {/* 빠른 수정(그날 전체, 확정 합주 칸은 그대로) + 되돌리기를 한 줄에 */}
+              <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                {(["yes", "no"] as const).map((st) => (
+                  <button
+                    key={st}
+                    onClick={() => setDay(dateValues.map((v, i) => (locked[i] ? v : st)))}
+                    className="flex items-center gap-1 whitespace-nowrap rounded border px-2 py-1 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                  >
+                    <span className={`inline-block h-2.5 w-2.5 rounded-sm ${STATUS_COLOR[st]}`} />
+                    종일 {st === "yes" ? "가능" : "불가"}
+                  </button>
+                ))}
                 <button
                   disabled={!exceptions[date]}
                   onClick={() => {
@@ -95,7 +131,7 @@ export default function MySchedulePage({ initialBase, initialExceptions, rehears
                     });
                     run(date, () => deleteException(date), 0);
                   }}
-                  className="rounded border px-2 py-1 hover:bg-zinc-200 disabled:opacity-40 disabled:hover:bg-transparent dark:hover:bg-zinc-700"
+                  className="ml-auto whitespace-nowrap rounded border px-2 py-1 hover:bg-zinc-200 disabled:opacity-40 disabled:hover:bg-transparent dark:hover:bg-zinc-700"
                 >
                   기본 시간표로 되돌리기
                 </button>
@@ -109,10 +145,7 @@ export default function MySchedulePage({ initialBase, initialExceptions, rehears
                 columns={[date.slice(5)]}
                 values={[dateValues]}
                 locked={[locked]}
-                onChange={([col]) => {
-                  setExceptions((e) => ({ ...e, [date]: col }));
-                  run(date, () => saveException(date, encodeSlots(col)));
-                }}
+                onChange={([col]) => setDay(col)}
               />
             </div>
           ) : (

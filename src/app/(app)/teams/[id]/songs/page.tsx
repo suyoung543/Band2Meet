@@ -58,7 +58,7 @@ export default async function CandidatesPage({ params, searchParams }: PageProps
             {[s.artist, s.duration_sec && durationLabel(s.duration_sec), s.created_by && `${nick.get(s.created_by) ?? "탈퇴한 멤버"} 추천`].filter(Boolean).join(" · ")}
           </span>
         </div>
-        <div className="flex gap-1">
+        <div className="flex w-full flex-wrap gap-1 pl-15 sm:w-auto sm:pl-0">
           {s.status === "candidate" && (
             <>
               <form action={setSongStatus.bind(null, s.id, "practicing")}><button className={small}>연습곡으로</button></form>

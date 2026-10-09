@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { dateRange, findBlocks } from "@/lib/availability";
+import { dateRange, findBlocks, hasEntered } from "@/lib/availability";
 import { dateLabel, slotLabel } from "@/lib/schedule";
 import Section from "./section";
 import { loadAvailability, loadTeam } from "@/lib/team";
@@ -39,7 +39,8 @@ export default async function DashboardPage({ params, searchParams }: PageProps<
   for (const b of findBlocks(members, dates, { minSlots: team.min_block_slots, minPeople: 1 })) {
     best.set(b.date, Math.max(best.get(b.date) ?? 0, b.members.length));
   }
-  const filled = members.filter((m) => m.filled).length;
+  const entered = new Set(members.filter((m) => hasEntered(m, dates)).map((m) => m.id));
+  const filled = entered.size;
 
   return (
     <div className="flex flex-col divide-y">
@@ -65,8 +66,8 @@ export default async function DashboardPage({ params, searchParams }: PageProps<
       <Section title={`입력 현황 ${filled}/${total}`}>
         <div className="flex flex-wrap gap-2 text-xs">
           {members.map((m) => (
-            <span key={m.id} className={`rounded-full border px-2 py-1 ${m.filled ? "" : "border-dashed text-zinc-400"}`}>
-              {m.filled ? "✓ " : ""}{nick.get(m.id)}
+            <span key={m.id} className={`rounded-full border px-2 py-1 ${entered.has(m.id) ? "" : "border-dashed text-zinc-400"}`}>
+              {entered.has(m.id) ? "✓ " : ""}{nick.get(m.id)}
             </span>
           ))}
         </div>
@@ -83,13 +84,13 @@ export default async function DashboardPage({ params, searchParams }: PageProps<
       <Section
         title="후보 시간"
         right={
-          <div className="flex gap-1 text-xs">
+          <div className="flex flex-wrap gap-1 text-xs">
             {Array.from({ length: total }, (_, i) => total - i).map((n) => (
               <Link
                 key={n}
                 href={`/teams/${id}?min=${n}`}
                 scroll={false}
-                className={`rounded-full border px-2 py-0.5 ${n === minPeople ? "border-accent bg-accent text-accent-fg" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"}`}
+                className={`whitespace-nowrap rounded-full border px-2 py-0.5 ${n === minPeople ? "border-accent bg-accent text-accent-fg" : "hover:bg-zinc-100 dark:hover:bg-zinc-800"}`}
               >
                 {n === total ? `전원 ${n}명` : `${n}명 이상`}
               </Link>

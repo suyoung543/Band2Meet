@@ -1,6 +1,6 @@
 // 실행: npx tsx src/lib/availability.test.ts
 import assert from "node:assert/strict";
-import { Member, dateRange, findBlocks, memberDay } from "./availability";
+import { Member, dateRange, findBlocks, hasEntered, memberDay } from "./availability";
 
 // [from, to) 슬롯만 c, 나머지 m
 const row = (from: number, to: number, c = "y") => "m".repeat(from) + c.repeat(to - from) + "m".repeat(48 - to);
@@ -34,5 +34,15 @@ assert.deepEqual(
 );
 // 아무도 입력 안 했으면 결과 없음
 assert.deepEqual(findBlocks([{ id: "x", base: [], exceptions: {} }], mon, { minSlots: 1, minPeople: 1 }), []);
+
+// 입력 판정: 전부 미정이면 미입력, 다른 밴드 합주(busy)만 있어도 미입력
+assert.equal(hasEntered({ id: "x", base: week("m".repeat(48)), exceptions: {} }, mon), false);
+assert.equal(hasEntered({ id: "x", base: week("m".repeat(48)), exceptions: {}, busy: { "2026-09-28": [[0, 4]] } }, mon), false);
+assert.equal(hasEntered({ id: "x", base: week("m".repeat(48)), exceptions: { "2026-09-28": row(0, 2, "n") } }, mon), true);
+assert.equal(hasEntered(a, mon), true);
+// 기간 중 하루라도 전부 미정이면 미입력 (b는 화요일만 날짜별 수정으로 전부 불가, 나머지는 기본 시간표)
+const twoDays = ["2026-09-28", "2026-09-29"];
+assert.equal(hasEntered(b, twoDays), true);
+assert.equal(hasEntered({ ...a, exceptions: { "2026-09-29": "m".repeat(48) } }, twoDays), false);
 
 console.log("availability ok");

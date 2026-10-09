@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireMember } from "@/lib/auth";
+import { notify, teamMemberIds } from "@/lib/notify";
 
 // 곡 / 연습곡 / 셋리스트: 팀 멤버 누구나. 곡 삭제만 올린 사람 또는 리더
 
@@ -56,6 +57,16 @@ export async function addSong(teamId: string, formData: FormData) {
   if (r.error) redirect(`/teams/${teamId}/songs?error=${r.error}`);
   const { error } = await db.from("songs").insert({ team_id: teamId, ...r.fields, created_by: user_id });
   if (error) throw new Error(error.message);
+  const [{ data: team }, { data: me }] = await Promise.all([
+    db.from("teams").select("name").eq("id", teamId).single(),
+    db.from("users").select("nickname").eq("id", user_id).single(),
+  ]);
+  notify(await teamMemberIds(teamId), {
+    title: `[${team?.name}] 새 곡 후보: ${r.fields.title}${r.fields.artist ? ` - ${r.fields.artist}` : ""}`,
+    body: `${me?.nickname}님이 추천했어요.`,
+    url: `/teams/${teamId}/songs`,
+    teamId,
+  });
   redirect(`/teams/${teamId}/songs`);
 }
 

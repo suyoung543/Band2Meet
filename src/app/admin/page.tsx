@@ -133,9 +133,27 @@ export default async function AdminPage() {
       {/* 밴드 목록 + 관리 */}
       <section className="flex flex-col gap-3">
         <h2 className="font-semibold">밴드 {teams.length}</h2>
-        <div className="overflow-x-auto rounded border">
+        {/* 폰: 카드 목록 */}
+        <ul className="flex flex-col divide-y rounded border sm:hidden">
+          {teams.map((t) => {
+            const { active, pending, leader } = teamInfo(t);
+            return (
+              <li key={t.id} className="flex flex-col gap-1 px-4 py-3 text-sm">
+                <span className="font-medium">{t.name}</span>
+                <span className="text-xs text-zinc-500">
+                  멤버 {active.length}명{pending ? ` (+대기 ${pending})` : ""} · 확정 합주 {t.confirmed_schedules[0]?.count ?? 0} · 곡 {t.songs[0]?.count ?? 0} · 리더 {leader} · {t.created_at.slice(5, 10)}
+                </span>
+                <div className="mt-1 text-xs">
+                  <TeamActions team={t} />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        {/* PC: 표 */}
+        <div className="hidden overflow-x-auto rounded border sm:block">
           <table className="w-full text-left text-sm">
-            <thead className="bg-zinc-50 text-xs text-zinc-500 dark:bg-zinc-900">
+            <thead className="whitespace-nowrap bg-zinc-50 text-xs text-zinc-500 dark:bg-zinc-900">
               <tr>
                 <th className="px-3 py-2 font-normal">이름</th>
                 <th className="px-3 py-2 font-normal">멤버</th>
@@ -148,9 +166,7 @@ export default async function AdminPage() {
             </thead>
             <tbody>
               {teams.map((t) => {
-                const active = t.team_members.filter((m) => m.status === "active");
-                const pending = t.team_members.length - active.length;
-                const leader = t.team_members.find((m) => m.user_id === t.leader_id)?.users.nickname ?? "알 수 없음";
+                const { active, pending, leader } = teamInfo(t);
                 return (
                   <tr key={t.id} className="border-t align-middle">
                     <td className="px-3 py-2 font-medium">{t.name}</td>
@@ -162,35 +178,7 @@ export default async function AdminPage() {
                     <td className="px-3 py-2 tabular-nums text-zinc-500">{t.created_at.slice(0, 10)}</td>
                     <td className="px-3 py-2">{leader}</td>
                     <td className="whitespace-nowrap px-3 py-2 text-xs">
-                      <DialogButton label="리더 변경" title={`${t.name} · 리더 변경`} className="text-zinc-600 hover:underline dark:text-zinc-300">
-                        <form action={adminSetLeader.bind(null, t.id)} className="flex flex-col gap-3 text-sm">
-                          <p className="text-xs text-zinc-500">현재 리더: {leader}. 활동 중인 멤버 중에서 고를 수 있어요.</p>
-                          <select name="user_id" defaultValue={t.leader_id} className="rounded border bg-transparent px-3 py-2">
-                            {active.map((m) => <option key={m.user_id} value={m.user_id}>{m.users.nickname}</option>)}
-                          </select>
-                          <ConfirmButton
-                            className="rounded bg-accent px-4 py-2 font-medium text-accent-fg hover:brightness-110"
-                            message={`"${t.name}"의 리더를 선택한 멤버로 바꿀까요?\n지금 리더는 팀 관리 권한이 사라져요.`}
-                          >
-                            변경
-                          </ConfirmButton>
-                        </form>
-                      </DialogButton>
-                      <span className="mx-2 text-zinc-300 dark:text-zinc-700">|</span>
-                      <DialogButton label="삭제" title={`${t.name} · 팀 삭제`} className="text-rose-600 hover:underline">
-                        <form action={adminDeleteTeam.bind(null, t.id)} className="flex flex-col gap-3 text-sm">
-                          <p className="text-zinc-600 dark:text-zinc-300">
-                            팀을 삭제하면 멤버 {active.length}명의 소속, 확정 합주 {t.confirmed_schedules[0]?.count ?? 0}개, 곡 {t.songs[0]?.count ?? 0}개,
-                            셋리스트가 모두 지워지고 되돌릴 수 없어요. 멤버들의 개인 스케줄은 남아요.
-                          </p>
-                          <ConfirmButton
-                            className="rounded bg-rose-600 px-4 py-2 font-medium text-white hover:brightness-110"
-                            message={`정말 "${t.name}" 팀을 삭제할까요? 되돌릴 수 없어요.`}
-                          >
-                            삭제
-                          </ConfirmButton>
-                        </form>
-                      </DialogButton>
+                      <TeamActions team={t} />
                     </td>
                   </tr>
                 );
@@ -205,7 +193,7 @@ export default async function AdminPage() {
         <h2 className="font-semibold">이용자 {users?.length ?? 0}</h2>
         <div className="overflow-x-auto rounded border">
           <table className="w-full text-left text-sm">
-            <thead className="bg-zinc-50 text-xs text-zinc-500 dark:bg-zinc-900">
+            <thead className="whitespace-nowrap bg-zinc-50 text-xs text-zinc-500 dark:bg-zinc-900">
               <tr>
                 <th className="px-3 py-2 font-normal">닉네임</th>
                 <th className="px-3 py-2 font-normal">가입일</th>
@@ -238,5 +226,52 @@ export default async function AdminPage() {
         </p>
       </section>
     </main>
+  );
+}
+
+function teamInfo(t: Team) {
+  const active = t.team_members.filter((m) => m.status === "active");
+  return {
+    active,
+    pending: t.team_members.length - active.length,
+    leader: t.team_members.find((m) => m.user_id === t.leader_id)?.users.nickname ?? "알 수 없음",
+  };
+}
+
+// 리더 변경 / 삭제 (팝업 → 확인창). 폰 카드와 PC 표에서 같이 씀
+function TeamActions({ team: t }: { team: Team }) {
+  const { active, leader } = teamInfo(t);
+  return (
+    <>
+      <DialogButton label="리더 변경" title={`${t.name} · 리더 변경`} className="text-zinc-600 hover:underline dark:text-zinc-300">
+        <form action={adminSetLeader.bind(null, t.id)} className="flex flex-col gap-3 text-sm">
+          <p className="text-xs text-zinc-500">현재 리더: {leader}. 활동 중인 멤버 중에서 고를 수 있어요.</p>
+          <select name="user_id" defaultValue={t.leader_id} className="rounded border bg-transparent px-3 py-2">
+            {active.map((m) => <option key={m.user_id} value={m.user_id}>{m.users.nickname}</option>)}
+          </select>
+          <ConfirmButton
+            className="rounded bg-accent px-4 py-2 font-medium text-accent-fg hover:brightness-110"
+            message={`"${t.name}"의 리더를 선택한 멤버로 바꿀까요?\n지금 리더는 팀 관리 권한이 사라져요.`}
+          >
+            변경
+          </ConfirmButton>
+        </form>
+      </DialogButton>
+      <span className="mx-2 text-zinc-300 dark:text-zinc-700">|</span>
+      <DialogButton label="삭제" title={`${t.name} · 팀 삭제`} className="text-rose-600 hover:underline">
+        <form action={adminDeleteTeam.bind(null, t.id)} className="flex flex-col gap-3 text-sm">
+          <p className="text-zinc-600 dark:text-zinc-300">
+            팀을 삭제하면 멤버 {active.length}명의 소속, 확정 합주 {t.confirmed_schedules[0]?.count ?? 0}개, 곡 {t.songs[0]?.count ?? 0}개,
+            셋리스트가 모두 지워지고 되돌릴 수 없어요. 멤버들의 개인 스케줄은 남아요.
+          </p>
+          <ConfirmButton
+            className="rounded bg-rose-600 px-4 py-2 font-medium text-white hover:brightness-110"
+            message={`정말 "${t.name}" 팀을 삭제할까요? 되돌릴 수 없어요.`}
+          >
+            삭제
+          </ConfirmButton>
+        </form>
+      </DialogButton>
+    </>
   );
 }

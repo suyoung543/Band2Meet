@@ -8,10 +8,11 @@ type Props = {
   values: Status[][]; // values[col][slot]
   onChange: (values: Status[][]) => void;
   locked?: (string | null)[][]; // locked[col][slot] = 확정 합주 팀 이름 → 파란색, 수정 불가
+  readOnly?: boolean; // 보기 전용: 칸을 눌러도 안 바뀌고, 칸 위에서도 스크롤됨
 };
 
 // 탭하면 가능→불가능→미정 순환. 누른 채로 드래그하면 첫 칸의 새 상태로 칠함.
-export default function ScheduleGrid({ columns, values, onChange, locked }: Props) {
+export default function ScheduleGrid({ columns, values, onChange, locked, readOnly }: Props) {
   const paint = useRef<Status | null>(null);
   const latest = useRef(values);
   useEffect(() => {
@@ -91,11 +92,11 @@ export default function ScheduleGrid({ columns, values, onChange, locked }: Prop
                   data-c={c}
                   data-s={s}
                   title={locked?.[c]?.[s] ? `${t} 합주: ${locked[c][s]}` : `${t} ${STATUS_LABEL[values[c][s]]}`}
-                  className={`h-5 touch-none border border-background ${
-                    locked?.[c]?.[s] ? "bg-accent" : `cursor-pointer hover:brightness-110 ${COLOR[values[c][s]]}`
+                  className={`h-5 border border-background ${readOnly ? "" : "touch-none"} ${
+                    locked?.[c]?.[s] ? "bg-accent" : readOnly ? COLOR[values[c][s]] : `cursor-pointer hover:brightness-110 ${COLOR[values[c][s]]}`
                   }`}
                   onPointerDown={(e) => {
-                    if (locked?.[c]?.[s]) return;
+                    if (readOnly || locked?.[c]?.[s]) return;
                     e.currentTarget.releasePointerCapture(e.pointerId); // 터치에서도 move 이벤트가 다른 칸으로 가게
                     paint.current = NEXT[values[c][s]];
                     set(c, s, paint.current);

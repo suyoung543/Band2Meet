@@ -33,6 +33,10 @@ export function memberDay(m: Member, date: string): string {
   return row.join("");
 }
 
+// 수합 기간의 모든 날짜에 "가능"이나 "불가능"이 하나 이상 있어야 입력 완료.
+// 다른 밴드 확정 합주로 자동 불가 처리된 칸(busy)은 본인이 입력한 게 아니라 제외
+export const hasEntered = (m: Member, dates: string[]) => dates.every((d) => /[yn]/.test(memberDay({ ...m, busy: undefined }, d)));
+
 const popcount = (n: number) => {
   let c = 0;
   for (; n; n &= n - 1) c++;

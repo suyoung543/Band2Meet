@@ -48,19 +48,11 @@ export async function loadAvailability(teamId: string, userIds: string[], from: 
         .lte("date", to)
     : { data: [] };
 
-  const byId = new Map<string, Member & { filled: boolean }>(
-    userIds.map((id) => [id, { id, base: [], exceptions: {}, busy: {}, filled: false }]),
+  const byId = new Map<string, Member>(
+    userIds.map((id) => [id, { id, base: [], exceptions: {}, busy: {} }]),
   );
-  for (const r of base ?? []) {
-    const m = byId.get(r.user_id)!;
-    m.base[r.day] = r.slots;
-    m.filled = true;
-  }
-  for (const r of ex ?? []) {
-    const m = byId.get(r.user_id)!;
-    m.exceptions[r.date] = r.slots;
-    m.filled = true;
-  }
+  for (const r of base ?? []) byId.get(r.user_id)!.base[r.day] = r.slots;
+  for (const r of ex ?? []) byId.get(r.user_id)!.exceptions[r.date] = r.slots;
   for (const o of other ?? []) {
     for (const c of confirmed ?? []) {
       if (c.team_id !== o.team_id) continue;
