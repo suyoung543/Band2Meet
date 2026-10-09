@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { deliver } from "@/lib/notify";
 import { requireUser } from "@/lib/session";
@@ -21,4 +22,10 @@ export async function deletePushSubscription(endpoint: string) {
 export async function sendTestPush() {
   const user_id = await requireUser();
   await deliver([user_id], { title: "Band2Meet 테스트 알림", body: "푸시 알림이 잘 와요!", url: "/notifications" });
+}
+
+export async function clearNotifications() {
+  const user_id = await requireUser();
+  await db.from("notifications").delete().eq("user_id", user_id);
+  revalidatePath("/", "layout");
 }

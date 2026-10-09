@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { after } from "next/server";
+import { clearNotifications } from "@/app/notification-actions";
+import ConfirmButton from "@/components/ConfirmButton";
 import PushToggle from "@/components/PushToggle";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
@@ -24,7 +26,16 @@ export default async function NotificationsPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4">
-      <h1 className="text-xl font-semibold">알림</h1>
+      <div className="flex items-baseline justify-between">
+        <h1 className="text-xl font-semibold">알림</h1>
+        {!!data?.length && (
+          <form action={clearNotifications}>
+            <ConfirmButton className="text-sm text-zinc-500 hover:text-rose-600 hover:underline" message="알림을 모두 지울까요?">
+              모두 지우기
+            </ConfirmButton>
+          </form>
+        )}
+      </div>
       <PushToggle />
       {data?.length ? (
         <ul className="flex flex-col divide-y rounded border">

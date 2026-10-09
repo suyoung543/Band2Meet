@@ -94,7 +94,7 @@ export async function removeMember(teamId: string, userId: string) {
 const MAX_RANGE_DAYS = 92;
 
 export async function saveTeamSettings(teamId: string, formData: FormData) {
-  const { user_id } = await requireMember(teamId);
+  await requireMember(teamId);
   const { data: before } = await db.from("teams").select("name, collect_start").eq("id", teamId).single();
   const starting = !before?.collect_start; // 진행 중인 수합이 없다가 새로 시작
   const start = String(formData.get("collect_start") ?? "");
