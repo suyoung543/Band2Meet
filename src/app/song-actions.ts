@@ -193,3 +193,49 @@ export async function saveItemMemo(setlistId: string, songId: string, formData: 
   await db.from("setlist_items").update({ memo: memo || null }).eq("setlist_id", setlistId).eq("song_id", songId);
   refresh(teamId);
 }
+
+// ── 곡 댓글 ─────────────────────────────────────
+
+export async function addSongComment(songId: string, formData: FormData) {
+  const teamId = await teamOf("songs", songId);
+  const { user_id } = await requireMember(teamId);
+  const body = String(formData.get("body") ?? "").trim().slice(0, 500);
+  if (!body) return;
+  await db.from("song_comments").insert({ song_id: songId, user_id, body });
+  // 댓글 알림: 쓴 사람을 뺀 팀 전원
+  const [{ data: song }, { data: me }] = await Promise.all([
+    db.from("songs").select("title, artist, teams(name)").eq("id", songId).single(),
+    db.from("users").select("nickname").eq("id", user_id).single(),
+  ]);
+  notify((await teamMemberIds(teamId)).filter((id) => id !== user_id), {
+    title: `[${(song?.teams as unknown as { name: string } | null)?.name}] ${song?.title}${song?.artist ? ` - ${song.artist}` : ""}에 새 댓글`,
+    body: `${me?.nickname}: ${body.length > 80 ? body.slice(0, 80) + "…" : body}`,
+    url: `/teams/${teamId}/songs`,
+    teamId,
+  });
+  refresh(teamId);
+}
+
+// 쓴 사람 또는 리더만
+export async function deleteSongComment(commentId: string) {
+  const { data } = await db.from("song_comments").select("user_id, songs(team_id)").eq("id", commentId).maybeSingle();
+  const teamId = (data?.songs as unknown as { team_id: string } | null)?.team_id;
+  if (!data || !teamId) return;
+  const { user_id, isLeader } = await requireMember(teamId);
+  if (data.user_id !== user_id && !isLeader) throw new Error("쓴 사람이나 리더만 지울 수 있어요");
+  await db.from("song_comments").delete().eq("id", commentId);
+  refresh(teamId);
+}
+
+// 쓴 사람만 수정
+export async function updateSongComment(commentId: string, formData: FormData) {
+  const { data } = await db.from("song_comments").select("user_id, songs(team_id)").eq("id", commentId).maybeSingle();
+  const teamId = (data?.songs as unknown as { team_id: string } | null)?.team_id;
+  if (!data || !teamId) return;
+  const { user_id } = await requireMember(teamId);
+  if (data.user_id !== user_id) throw new Error("쓴 사람만 고칠 수 있어요");
+  const body = String(formData.get("body") ?? "").trim().slice(0, 500);
+  if (!body) return;
+  await db.from("song_comments").update({ body }).eq("id", commentId);
+  refresh(teamId);
+}

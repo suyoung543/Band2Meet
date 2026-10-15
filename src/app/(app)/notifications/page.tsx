@@ -4,14 +4,8 @@ import { clearNotifications } from "@/app/notification-actions";
 import ConfirmButton from "@/components/ConfirmButton";
 import PushToggle from "@/components/PushToggle";
 import { db } from "@/lib/db";
+import { whenLabel } from "@/lib/schedule";
 import { requireUser } from "@/lib/session";
-
-// 시간 표시: 오늘이면 시:분, 아니면 월/일 (한국 시간)
-function when(iso: string) {
-  const kst = (t: number) => new Date(t + 9 * 3600_000).toISOString();
-  const d = kst(Date.parse(iso)), now = kst(Date.now());
-  return d.slice(0, 10) === now.slice(0, 10) ? d.slice(11, 16) : `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`;
-}
 
 export default async function NotificationsPage() {
   const userId = await requireUser();
@@ -45,7 +39,7 @@ export default async function NotificationsPage() {
                 <span className="flex items-baseline gap-2">
                   {!n.read_at && <span className="h-2 w-2 shrink-0 rounded-full bg-accent" aria-label="새 알림" />}
                   <span className="flex-1 font-medium">{n.title}</span>
-                  <span className="shrink-0 text-xs text-zinc-500 tabular-nums">{when(n.created_at)}</span>
+                  <span className="shrink-0 text-xs text-zinc-500 tabular-nums">{whenLabel(n.created_at)}</span>
                 </span>
                 {n.body && <span className="text-xs text-zinc-500">{n.body}</span>}
               </>

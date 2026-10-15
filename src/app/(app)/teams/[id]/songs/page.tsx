@@ -4,6 +4,7 @@ import { addSong, deleteSong, setSongStatus, toggleVote } from "@/app/song-actio
 import { db } from "@/lib/db";
 import { durationLabel } from "@/lib/schedule";
 import { loadTeam } from "@/lib/team";
+import SongComments, { Comment } from "./comments";
 import SongEdit from "./edit";
 
 type Song = {
@@ -15,6 +16,7 @@ type Song = {
   status: string;
   created_by: string | null;
   votes: { user_id: string }[];
+  song_comments: Comment[];
 };
 
 const ERRORS: Record<string, string> = { title: "제목을 입력해 주세요.", url: "링크는 http:// 또는 https://로 시작해야 해요." };
@@ -29,11 +31,12 @@ export default async function CandidatesPage({ params, searchParams }: PageProps
 
   const { data } = await db
     .from("songs")
-    .select("id, title, artist, ref_url, duration_sec, status, created_by, votes(user_id)")
+    .select("id, title, artist, ref_url, duration_sec, status, created_by, votes(user_id), song_comments(id, body, created_at, user_id, users(nickname))")
     .eq("team_id", id)
     .in("status", ["candidate", "hold"])
-    .order("created_at");
-  const songs = (data ?? []) as Song[];
+    .order("created_at")
+    .order("created_at", { referencedTable: "song_comments" });
+  const songs = (data ?? []) as unknown as Song[];
   const candidates = songs.filter((s) => s.status === "candidate").sort((a, b) => b.votes.length - a.votes.length);
   const held = songs.filter((s) => s.status === "hold");
 
@@ -58,7 +61,14 @@ export default async function CandidatesPage({ params, searchParams }: PageProps
             {[s.artist, s.duration_sec && durationLabel(s.duration_sec), s.created_by && `${nick.get(s.created_by) ?? "탈퇴한 멤버"} 추천`].filter(Boolean).join(" · ")}
           </span>
         </div>
-        <div className="flex w-full flex-wrap gap-1 pl-15 sm:w-auto sm:pl-0">
+        <div className="flex w-full flex-wrap items-center gap-1 sm:w-auto">
+          <SongComments
+            song={s}
+            comments={s.song_comments}
+            userId={userId}
+            isLeader={isLeader}
+            className="flex w-12 items-center justify-center gap-1 rounded-full border px-2 py-0.5 text-xs tabular-nums hover:bg-zinc-100 dark:hover:bg-zinc-800"
+          />
           {s.status === "candidate" && (
             <>
               <form action={setSongStatus.bind(null, s.id, "practicing")}><button className={small}>연습곡으로</button></form>

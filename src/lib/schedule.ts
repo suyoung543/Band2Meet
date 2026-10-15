@@ -51,3 +51,10 @@ export const kstToday = () => new Date(Date.now() + 9 * 3600_000).toISOString().
 
 // 225 → "3:45"
 export const durationLabel = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+
+// 시각 표시 (한국 시간): 오늘이면 "14:05", 아니면 "10/3"
+export function whenLabel(iso: string) {
+  const kst = (t: number) => new Date(t + 9 * 3600_000).toISOString();
+  const d = kst(Date.parse(iso)), now = kst(Date.now());
+  return d.slice(0, 10) === now.slice(0, 10) ? d.slice(11, 16) : `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}`;
+}
