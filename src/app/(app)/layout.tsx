@@ -7,6 +7,15 @@ import { db } from "@/lib/db";
 import { checkDeadlines } from "@/lib/notify";
 import { kstToday } from "@/lib/schedule";
 import { requireUser } from "@/lib/session";
+import type { Viewport } from "next";
+
+// 상태바 색을 헤더 배경과 같게 → 상태바~헤더가 한 덩어리로 보여서 로고 위 여백이 빈 틈처럼 안 보임 (값은 globals.css --header)
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f4f4f5" },
+    { media: "(prefers-color-scheme: dark)", color: "#18181b" },
+  ],
+};
 
 // 로그인 후 화면 공통 헤더. 권한 체크는 각 페이지/액션에서도 따로 함 (레이아웃은 보안 경계가 아님)
 export default async function AppLayout({ children }: LayoutProps<"/">) {
@@ -24,8 +33,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     <>
       {/* 홈 화면 앱(iOS 26)은 상태바 아래쪽까지 시스템 블러가 덮음 → 앱 모드에서만 헤더를 블러 밖으로 내림.
           ponytail: 블러 높이는 iOS가 정함, 여전히 가려지면 pt 값만 조정 */}
-      <header className="flex items-center gap-3 whitespace-nowrap border-b px-4 py-3 sm:gap-5 [@media(display-mode:standalone)]:pt-4">
-        <Link href="/" className="text-lg font-bold">Band2Meet</Link>
+      <header className="flex items-center gap-3 whitespace-nowrap border-b bg-header px-4 py-3 sm:gap-5 [@media(display-mode:standalone)]:pt-6">
+        <Link href="/" className="text-xl font-bold">Band2Meet</Link>
         <HeaderNav />
         <BellLink unread={unread ?? 0} />
         {/* PC: 닉네임 + (관리자) + 로그아웃 */}
@@ -39,7 +48,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         {/* 모바일: 닉네임을 누르면 로그아웃 메뉴 */}
         <details className="relative sm:hidden">
           <summary className="cursor-pointer list-none text-sm">{user.nickname} ▾</summary>
-          <div className="absolute right-0 z-20 mt-2 flex flex-col rounded border bg-background shadow-lg">
+          <div className="absolute right-0 z-20 mt-2 flex flex-col rounded border bg-header shadow-lg">
             {user.is_admin && (
               <Link href="/admin" className="border-b px-4 py-2 text-sm">관리자</Link>
             )}

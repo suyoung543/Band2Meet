@@ -8,6 +8,7 @@
   --accent: #557488; /* #7C9CB1은 흰 배경에서 대비가 약해 라이트 모드만 한 톤 진하게 */
   --accent-fg: #ffffff; /* accent 배경 위 글자 */
   --yes: #95d5b2; /* 가능 */
+  --header: #f4f4f5; /* 상단 헤더 배경 ((app)/layout.tsx의 themeColor와 같은 값) */
 }
 
 @theme inline {
@@ -16,6 +17,7 @@
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
   --color-yes: var(--yes);
+  --color-header: var(--header);
   --color-danger: #d6284e; /* 팝업의 위험 동작 버튼 (rose-600보다 채도 살짝 낮춤) */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -29,6 +31,7 @@
     --accent: #7c9cb1;
     --accent-fg: #0a0a0a;
     --yes: #74c69d;
+    --header: #18181b;
   }
 }
 
