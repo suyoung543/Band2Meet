@@ -33,7 +33,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     <>
       {/* 홈 화면 앱(iOS 26)은 상태바 아래쪽까지 시스템 블러가 덮음 → 앱 모드에서만 헤더를 블러 밖으로 내림.
           ponytail: 블러 높이는 iOS가 정함, 여전히 가려지면 pt 값만 조정 */}
-      <header className="flex items-center gap-3 whitespace-nowrap border-b bg-header px-4 py-3 sm:gap-5 [@media(display-mode:standalone)]:pt-6">
+      <header className="flex items-center gap-3 whitespace-nowrap border-b bg-header px-4 py-3 sm:gap-5 [@media(display-mode:standalone)]:pt-7">
         <Link href="/" className="text-xl font-bold">Band2Meet</Link>
         <HeaderNav />
         <BellLink unread={unread ?? 0} />

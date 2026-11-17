@@ -14,7 +14,7 @@ export default async function TeamsPage() {
     .order("joined_at");
 
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-col gap-6 p-4">
+    <main className="mx-auto flex w-full max-w-xl flex-col gap-6 p-4 pt-6">
       <h1 className="text-xl font-semibold">내 밴드</h1>
 
       {rows?.length ? (
