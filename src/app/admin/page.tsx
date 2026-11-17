@@ -57,7 +57,7 @@ export default async function AdminPage() {
   const bytes = Number(dbBytes ?? 0);
 
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-col gap-8 p-4">
+    <main className="mx-auto flex w-full max-w-4xl flex-col gap-8 p-4 [@media(display-mode:standalone)]:pt-8">
       <header className="flex items-baseline gap-3">
         <h1 className="text-xl font-bold">Band2Meet 관리자</h1>
         <Link href="/" className="ml-auto text-sm text-zinc-500 hover:text-foreground">앱으로 →</Link>
